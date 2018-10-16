@@ -9,9 +9,13 @@ type EngineService interface {
 	GetName() string
 }
 
-func GetEngineServiceImpl(name string) EngineService {
-	if name == "AWS" {
-		return &AWSEngine{SNSClient: GetSNSClient()}
+var EnginesMap = make(map[string]EngineService)
+
+
+func GetEngineService(name string) EngineService {
+	engine, ok := EnginesMap[name]
+	if ok {
+		return engine
 	}
 	return nil
 }

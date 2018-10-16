@@ -119,6 +119,14 @@
   revision = "0b12d6b5"
 
 [[projects]]
+  digest = "1:75ab90ae3f5d876167e60f493beadfe66f0ed861a710f283fb06c86437a09538"
+  name = "github.com/jonboulle/clockwork"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2eee05ed794112d45db504eb05aa693efd2b8b09"
+  version = "v0.1.0"
+
+[[projects]]
   digest = "1:3e551bbb3a7c0ab2a2bf4660e7fcad16db089fdcfbb44b0199e62838038623ea"
   name = "github.com/json-iterator/go"
   packages = ["."]
@@ -231,6 +239,8 @@
     "github.com/go-sql-driver/mysql",
     "github.com/jinzhu/gorm",
     "github.com/jinzhu/gorm/dialects/mysql",
+    "github.com/jonboulle/clockwork",
+    "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/mock",
   ]
   solver-name = "gps-cdcl"

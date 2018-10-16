@@ -11,7 +11,9 @@ type Topics interface {
 }
 
 func (db *DB) CreateTopic(name string, engine string, resourceID string) error {
-	topic := Topic{Name: name, Engine: engine, ResourceID: resourceID}
+	topic := Topic{Name: name, Engine: engine, ResourceID: resourceID }
+	topic.CreatedAt = Clock.Now()
+	topic.UpdatedAt = Clock.Now()
 	db.NewRecord(topic)
 	if err := db.Create(topic).Error; err != nil {
 		return err

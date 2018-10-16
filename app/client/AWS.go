@@ -47,7 +47,3 @@ func (aw AWSEngine) GetName() string {
 	return "AWS"
 }
 
-func main() {
-	EngineService := GetEngineServiceImpl("AWS")
-	EngineService.CreateTopic("sarasa")
-}
