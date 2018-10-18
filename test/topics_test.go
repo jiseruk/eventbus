@@ -21,14 +21,16 @@ func TestCreateTopic(t *testing.T) {
 	model.Clock = clockwork.NewFakeClock()
 	t.Run("It should create the topic in AWS and the DB entity", func(t *testing.T) {
 		mockSNS := &SNSAPIMock{}
-		mockDB := &TopicMock{}
+		mockDAO := &TopicsDaoMock{}
 		client.EnginesMap["AWS"] = &client.AWSEngine{mockSNS}
-		service.TopicsService = service.TopicServiceImpl{mockDB}
+		service.TopicsService = service.TopicServiceImpl{mockDAO}
 		var topic = "topic"
 		var resource = "arn:topic"
+		topicMock := getTopicMock(topic, "AWS", resource)
+
 		mockSNS.On("CreateTopic", &sns.CreateTopicInput{Name: &topic}).Return(&sns.CreateTopicOutput{TopicArn: &resource}, nil).Once()
-		mockDB.On("GetTopic", topic).Return(nil, nil).Once()
-		mockDB.On("CreateTopic", topic, "AWS", resource).Return(nil).Once()
+		mockDAO.On("GetTopic", topic).Return(nil, nil).Once()
+		mockDAO.On("CreateTopic", topic, "AWS", resource).Return(topicMock, nil).Once()
 		router := server.GetRouter()
 		rec := httptest.NewRecorder()
 		req, _ := http.NewRequest("POST", "/topics", strings.NewReader(`{"name": "topic", "engine": "AWS"}`))
@@ -36,21 +38,21 @@ func TestCreateTopic(t *testing.T) {
 		assert.JSONEq(t, fmt.Sprintf(`{"name": "topic", "engine": "AWS", "resource_id":"arn:topic", "created_at": "%s"}`, model.Clock.Now().Format("2006-01-02T15:04:05Z")), rec.Body.String())
 
 		mockSNS.AssertExpectations(t)
-		mockDB.AssertExpectations(t)
+		mockDAO.AssertExpectations(t)
 	})
 
 	t.Run("it should fail create the topic if it already exists", func(t *testing.T) {
-		mockDB := &TopicMock{}
-		service.TopicsService = service.TopicServiceImpl{mockDB}
+		mockDAO := &TopicsDaoMock{}
+		service.TopicsService = service.TopicServiceImpl{mockDAO}
 		var topic = "topic"
-		mockDB.On("GetTopic", topic).Return(&model.Topic{Name: topic}, nil).Once()
+		mockDAO.On("GetTopic", topic).Return(&model.Topic{Name: topic}, nil).Once()
 		router := server.GetRouter()
 		rec := httptest.NewRecorder()
 		req, _ := http.NewRequest("POST", "/topics", strings.NewReader(`{"name": "topic", "engine": "AWS"}`))
 		router.ServeHTTP(rec, req)
 		assert.JSONEq(t, `{"status": 400, "code": "database_error", "message": "Topic with name topic already exists"}`, rec.Body.String())
 		assert.Equal(t, 400, rec.Code)
-		mockDB.AssertExpectations(t)
+		mockDAO.AssertExpectations(t)
 
 	})
 

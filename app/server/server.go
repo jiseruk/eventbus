@@ -9,13 +9,15 @@ import (
 
 func Init() {
 	r := GetRouter()
-	client.EnginesMap["AWS"] = &client.AWSEngine{SNSClient:client.GetSNSClient()}
+	sns, lambda := client.GetClients()
+	client.EnginesMap["AWS"] = &client.AWSEngine{SNSClient:sns, LambdaClient:lambda}
 	db, err := model.NewDB()
 	if err != nil {
 		log.Panic(err)
 	}
 	service.TopicsService = service.TopicServiceImpl{db}
-
+	service.SubscriptionsService = service.SubscriptionServiceImpl{Db:db}
+	service.PublishersService = service.PublisherServiceImpl{}
 
 	r.Run(":8080")
 }

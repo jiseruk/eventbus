@@ -4,21 +4,22 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-type Topics interface {
-	CreateTopic(name string, engine string, resourceID string) error
+type TopicsDao interface {
+	CreateTopic(name string, engine string, resourceID string) (*Topic, error)
 	GetTopic(name string) (*Topic, error)
 	DeleteTopic(name string) error
 }
 
-func (db *DB) CreateTopic(name string, engine string, resourceID string) error {
+func (db *DB) CreateTopic(name string, engine string, resourceID string) (*Topic, error) {
 	topic := Topic{Name: name, Engine: engine, ResourceID: resourceID }
 	topic.CreatedAt = Clock.Now()
 	topic.UpdatedAt = Clock.Now()
-	db.NewRecord(topic)
-	if err := db.Create(topic).Error; err != nil {
-		return err
+	//topic.ID = uuid.New()
+	//topic.ID = 1
+	if err := db.Save(&topic).Error; err != nil {
+		return nil, err
 	}
-	return nil
+	return &topic, nil
 }
 
 func (db *DB) GetTopic(name string) (*Topic, error) {

@@ -3,9 +3,17 @@ package client
 type CreateTopicOutput struct {
 	Resource string
 }
+type PublishOutput struct{
+	MessageID string
+}
+type SubscriberOutput struct {
+	SubscriptionID string
+}
 
 type EngineService interface {
 	CreateTopic(name string) (*CreateTopicOutput, error)
+	Publish(topicResourceID string, message interface{}) (*PublishOutput, error)
+	CreateSubscriber(topicResourceID string, subscriber string, endpoint string) (*SubscriberOutput, error)
 	GetName() string
 }
 

@@ -9,22 +9,25 @@ import (
 	"net/http"
 )
 
-type TopicController struct{
+type SubscriptionController struct{
 }
 
-var EngineService client.EngineService
-
-func (t TopicController) Create(c *gin.Context) {
-	var json model.Topic
+func (t SubscriptionController) Create(c *gin.Context) {
+	var json model.Subscriber
 	if err := c.ShouldBindJSON(&json); err != nil {
 		c.JSON(http.StatusBadRequest, app.NewAPIError(http.StatusBadRequest, "json_error", err.Error()))
 		return
 	}
-	engine := client.GetEngineService(json.Engine)
-	topic, err := service.TopicsService.CreateTopic(json.Name, engine)
+	topic, err := service.TopicsService.GetTopic(json.Topic)
 	if err != nil {
 		c.JSON(err.Status, err)
 		return
 	}
-	c.JSON(http.StatusCreated, &topic)
+	engine := client.GetEngineService(topic.Engine)
+	subscriber, err := service.SubscriptionsService.CreateSubscription(json.Name, json.Endpoint, json.Topic, engine)
+	if err != nil {
+		c.JSON(err.Status, err)
+		return
+	}
+	c.JSON(http.StatusCreated, &subscriber)
 }
