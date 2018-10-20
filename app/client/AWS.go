@@ -1,6 +1,7 @@
 package client
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -28,16 +29,15 @@ func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI) {
 		//Endpoint:    aws.String(SNSEndpoint),
 	})
 	if err != nil {
-
+		panic("FATAL: Connot connect to AWS")
 	}
-	svc := sns.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint(SNSEndpoint))
-	lambda := lambda.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint("http://localstack:4574"))
-	return svc, lambda
+	snsClient := sns.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint(SNSEndpoint))
+	lambdaClient := lambda.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint("http://localstack:4574"))
+	return snsClient, lambdaClient
 }
 
 //CreateTopic lala
 func (azn *AWSEngine) CreateTopic(name string) (*CreateTopicOutput, error) {
-	// Make svc.AddPermission request
 	var input = &sns.CreateTopicInput{Name: &name}
 	snsoutput, err := azn.SNSClient.CreateTopic(input)
 	if err != nil {
@@ -48,12 +48,18 @@ func (azn *AWSEngine) CreateTopic(name string) (*CreateTopicOutput, error) {
 	return output, nil
 }
 
+func (azn *AWSEngine) DeleteTopic(resource string) error {
+	_, err := azn.SNSClient.DeleteTopic(&sns.DeleteTopicInput{TopicArn: &resource})
+	return err
+}
+
 func (azn AWSEngine) GetName() string {
 	return "AWS"
 }
 
 func (azn AWSEngine) Publish(topicResourceID string, message interface{}) (*PublishOutput, error){
-	strMessage := message.(string)
+	bytesMessage, _ := json.Marshal(message)
+	strMessage := string(bytesMessage)
 	publishInput := &sns.PublishInput{Message: &strMessage, TopicArn: &topicResourceID}
 	output, err := azn.SNSClient.Publish(publishInput)
 	if err != nil {
@@ -81,27 +87,23 @@ func (azn AWSEngine) CreateSubscriber(topicResourceID string, subscriber string,
 }
 
 func (azn AWSEngine)createLambdaSubscriber(topic string, subscriber string, endpoint string) (*lambda.FunctionConfiguration, error){
-	//zipFileName := "lambda_subscriber"
-	zipFileName := "function"
-	contents, err := ioutil.ReadFile("/go/src/github.com/wenance/wequeue-management_api/app/lambda/" + zipFileName + ".zip")
+
+	contents, err := ioutil.ReadFile("/tmp/function.zip")
 	if err != nil {
 		return nil, err
 	}
-	//contents = []byte("lalala")
+
 	createCode := &lambda.FunctionCode{
-		//S3Bucket:        aws.String("EventBusSubscribers"),
-		//S3Key:           aws.String(zipFileName),
-		//S3ObjectVersion: aws.String("1"),
 		ZipFile:         contents,
 	}
 
-	environment:=  lambda.Environment{Variables: make(map[string]*string)}
+	environment:= lambda.Environment{Variables: make(map[string]*string)}
 	environment.Variables["subscriber_url"] = &endpoint
 	environment.Variables["topic"] = &topic
 
 	createArgs := &lambda.CreateFunctionInput{
 		Code:         createCode,
-		FunctionName: aws.String("lambda_subscriber"),
+		FunctionName: aws.String("lambda_subscriber_" + subscriber),
 		Handler:      aws.String("index.handler"),
 		Role:         aws.String("arn:role:dummy"),
 		Runtime:      aws.String("nodejs8.10"),
@@ -109,7 +111,7 @@ func (azn AWSEngine)createLambdaSubscriber(topic string, subscriber string, endp
 	}
 	fmt.Printf("Function input: %#v", *createArgs)
 	result, err := azn.LambdaClient.CreateFunction(createArgs)
-
+	//azn.LambdaClient.Invoke(lambda.InvokeInput{})
 	if err != nil {
 		fmt.Println("Cannot create function: " + err.Error())
 		return nil, err
@@ -117,4 +119,16 @@ func (azn AWSEngine)createLambdaSubscriber(topic string, subscriber string, endp
 		fmt.Println(result)
 	}
 	return result, nil
+}
+
+func (azn AWSEngine) InvokeLambda(name string, payload string) (*lambda.InvokeOutput, error){
+	output, err := azn.LambdaClient.Invoke(&lambda.InvokeInput{
+		Payload: []byte(payload),
+		FunctionName: &name,
+	})
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("%#v", output)
+	return output, nil
 }

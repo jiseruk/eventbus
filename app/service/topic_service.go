@@ -35,7 +35,14 @@ func (t TopicServiceImpl) CreateTopic(name string, engine client.EngineService) 
 	}
 	if topic, err := t.Db.CreateTopic(name, engine.GetName(), output.Resource); err != nil {
 		//TODO: Delete Topic in Engine
-		return nil, app.NewAPIError(http.StatusInternalServerError, "database_create_topic_error", err.Error())
+		delErr := engine.DeleteTopic(output.Resource)
+		var multipleErrors string
+		if delErr != nil {
+			multipleErrors = fmt.Sprintf("%s | %s", err.Error(), delErr.Error())
+		} else {
+			multipleErrors = err.Error()
+		}
+		return nil, app.NewAPIError(http.StatusInternalServerError, "database_create_topic_error", multipleErrors)
 	} else {
 		return topic, nil
 	}

@@ -4,12 +4,16 @@ import (
 	"github.com/wenance/wequeue-management_api/app/client"
 	"github.com/wenance/wequeue-management_api/app/model"
 	"github.com/wenance/wequeue-management_api/app/service"
+	"github.com/wenance/wequeue-management_api/app/utils"
 	"log"
 )
 
 func Init() {
 	r := GetRouter()
 	sns, lambda := client.GetClients()
+
+	utils.RecursiveZip("/go/src/github.com/wenance/wequeue-management_api/lambda/", "/tmp/function.zip")
+
 	client.EnginesMap["AWS"] = &client.AWSEngine{SNSClient:sns, LambdaClient:lambda}
 	db, err := model.NewDB()
 	if err != nil {
