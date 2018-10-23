@@ -3,7 +3,6 @@ package controller
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/wenance/wequeue-management_api/app"
-	"github.com/wenance/wequeue-management_api/app/client"
 	"github.com/wenance/wequeue-management_api/app/model"
 	"github.com/wenance/wequeue-management_api/app/service"
 	"net/http"
@@ -18,13 +17,7 @@ func (t SubscriptionController) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, app.NewAPIError(http.StatusBadRequest, "json_error", err.Error()))
 		return
 	}
-	topic, err := service.TopicsService.GetTopic(json.Topic)
-	if err != nil {
-		c.JSON(err.Status, err)
-		return
-	}
-	engine := client.GetEngineService(topic.Engine)
-	subscriber, err := service.SubscriptionsService.CreateSubscription(json.Name, json.Endpoint, json.Topic, engine)
+	subscriber, err := service.SubscriptionsService.CreateSubscription(json.Name, json.Endpoint, json.Topic)
 	if err != nil {
 		c.JSON(err.Status, err)
 		return

@@ -14,7 +14,7 @@ type PublisherController struct{
 func (t PublisherController) Publish(c *gin.Context) {
 	var json model.PublishMessage
 	if err := c.ShouldBindJSON(&json); err != nil {
-		c.JSON(http.StatusBadRequest, app.NewAPIError(http.StatusBadRequest, "json_error", err.Error()))
+		c.JSON(http.StatusBadRequest, app.NewAPIError(http.StatusBadRequest, "json_error", "The request body is not a valid json"))
 		return
 	}
 	messageId, err := service.PublishersService.Publish(json.Topic, json.Payload)

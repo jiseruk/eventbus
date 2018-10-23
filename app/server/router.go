@@ -34,7 +34,7 @@ func GetRouter() *gin.Engine {
 			return
 		}
 
-		log.Printf("Message received: %#v", &json)
+		log.Printf("Message received: %v", &json)
 		c.JSON(http.StatusOK, &json)
 
 	})

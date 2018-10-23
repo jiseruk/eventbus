@@ -21,6 +21,7 @@ func NewDB() (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	db.DropTableIfExists(&Topic{}, &Subscriber{})
 	db.AutoMigrate(&Topic{})
 	db.AutoMigrate(&Subscriber{})
 	return &DB{DB: db}, nil

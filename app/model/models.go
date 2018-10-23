@@ -23,7 +23,7 @@ type Subscriber struct {
 	ID        uint `gorm:"primary_key" json:"-"`
 	Name   string `gorm:"not null;unique" json:"name"`
 	ResourceID string `json:"resource_id"`
-	Endpoint string `json:"endpoint"`
+	Endpoint string `gorm:"not null;unique" json:"endpoint"`
 	Topic string `json:"topic"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"-"`
@@ -46,7 +46,7 @@ type Engine struct {
 }
 
 type PublishMessage struct {
-	Topic string
-	Payload interface{}
-	MessageID string
+	Topic string `json:"topic"`
+	Payload interface{} `json:"payload"`
+	MessageID string `json:"message_id"`
 }

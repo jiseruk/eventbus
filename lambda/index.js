@@ -46,7 +46,7 @@ exports.handler = function(event, context, callback) {
     console.log('Subscriber url:', process.env.subscriber_url);
 
     axios.post(process.env.subscriber_url, {
-        payload: message,
+        payload: JSON.parse(message),
         topic: process.env.topic
     }).then((res) => {
         console.log(`statusCode: ${res.statusCode}`);
@@ -59,7 +59,7 @@ exports.handler = function(event, context, callback) {
         }
     }).catch((error) => {
         console.error(error);
-        context.fail();
-        //callback(error);
+        //context.fail();
+        callback(error);
     });
 };

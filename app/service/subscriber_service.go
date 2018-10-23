@@ -9,7 +9,7 @@ import (
 )
 
 type SubscriptionService interface {
-	CreateSubscription(name string, endpoint string, topic string, engine client.EngineService) (*model.Subscriber, *app.APIError)
+	CreateSubscription(name string, endpoint string, topic string) (*model.Subscriber, *app.APIError)
 }
 
 type SubscriptionServiceImpl struct {
@@ -18,7 +18,7 @@ type SubscriptionServiceImpl struct {
 
 var SubscriptionsService SubscriptionService
 
-func (s SubscriptionServiceImpl) CreateSubscription(name string, endpoint string, topic string, engine client.EngineService) (*model.Subscriber, *app.APIError) {
+func (s SubscriptionServiceImpl) CreateSubscription(name string, endpoint string, topic string) (*model.Subscriber, *app.APIError) {
 	topicObj, apierr := TopicsService.GetTopic(topic)
 	if apierr != nil {
 		return nil, apierr
@@ -30,6 +30,7 @@ func (s SubscriptionServiceImpl) CreateSubscription(name string, endpoint string
 	if subscription != nil {
 		return nil, app.NewAPIError(http.StatusBadRequest, "database_error", fmt.Sprintf("Subscription with name %s already exists", name))
 	}
+	engine := client.GetEngineService(topicObj.Engine)
 	output, err := engine.CreateSubscriber(topicObj.ResourceID, name, endpoint)
 	if err != nil {
 		return nil, app.NewAPIError(http.StatusInternalServerError, "engine_error", err.Error())
