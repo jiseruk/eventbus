@@ -2,20 +2,7 @@
 
 
 [[projects]]
-  digest = "1:014e79cf5c422dd0547a87bde33c7f7b3cd29116a96fac8897c7e50f18531dea"
-  name = "github.com/aws/aws-lambda-go"
-  packages = [
-    "events",
-    "lambda",
-    "lambda/messages",
-    "lambdacontext",
-  ]
-  pruneopts = "UT"
-  revision = "2d482ef09017ae953b1e8d5a6ddac5b696663a3c"
-  version = "v1.6.0"
-
-[[projects]]
-  digest = "1:18f6db54c4a06eeeeecd0163484b81f692a7a1cf43e5ac863635dd478551eeae"
+  digest = "1:897c9e11fe02a7118b5457aece17a98445f2f8da8fd99e43ca7bed374059cbf6"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -47,6 +34,8 @@
     "private/protocol/rest",
     "private/protocol/restjson",
     "private/protocol/xml/xmlutil",
+    "service/kinesis",
+    "service/kinesis/kinesisiface",
     "service/lambda",
     "service/lambda/lambdaiface",
     "service/sns",
@@ -255,12 +244,11 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/aws/aws-lambda-go/events",
-    "github.com/aws/aws-lambda-go/lambda",
     "github.com/aws/aws-sdk-go/aws",
     "github.com/aws/aws-sdk-go/aws/credentials",
     "github.com/aws/aws-sdk-go/aws/request",
     "github.com/aws/aws-sdk-go/aws/session",
+    "github.com/aws/aws-sdk-go/service/kinesis/kinesisiface",
     "github.com/aws/aws-sdk-go/service/lambda",
     "github.com/aws/aws-sdk-go/service/lambda/lambdaiface",
     "github.com/aws/aws-sdk-go/service/sns",

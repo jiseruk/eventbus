@@ -6,6 +6,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/kinesis"
+	"github.com/aws/aws-sdk-go/service/kinesis/kinesisiface"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/lambda/lambdaiface"
 	"github.com/aws/aws-sdk-go/service/sns"
@@ -19,9 +21,10 @@ const SNSEndpoint = "http://localstack:4575"
 type AWSEngine struct {
 	SNSClient snsiface.SNSAPI
 	LambdaClient lambdaiface.LambdaAPI
+	KinesisClient kinesisiface.KinesisAPI
 }
 
-func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI) {
+func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI, kinesisiface.KinesisAPI) {
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String("us-east-1"),
 		//Credentials: credentials.NewSharedCredentials("", "default"),
@@ -33,7 +36,8 @@ func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI) {
 	}
 	snsClient := sns.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint(SNSEndpoint))
 	lambdaClient := lambda.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint("http://localstack:4574"))
-	return snsClient, lambdaClient
+	kinesisClient := kinesis.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint("http://localstack:4574"))
+	return snsClient, lambdaClient, kinesisClient
 }
 
 //CreateTopic lala
@@ -104,9 +108,11 @@ func (azn AWSEngine)createLambdaSubscriber(topic string, subscriber string, endp
 	createArgs := &lambda.CreateFunctionInput{
 		Code:         createCode,
 		FunctionName: aws.String("lambda_subscriber_" + subscriber),
-		Handler:      aws.String("index.handler"),
+		//Handler:      aws.String("index.handler"),
+		Handler:      aws.String("subscriber.handler"),
 		Role:         aws.String("arn:role:dummy"),
-		Runtime:      aws.String("nodejs8.10"),
+		//Runtime:      aws.String("nodejs8.10"),
+		Runtime:      aws.String("python2.7"),
 		Environment:  &environment,
 	}
 	fmt.Printf("Function input: %#v", *createArgs)
@@ -131,4 +137,42 @@ func (azn AWSEngine) InvokeLambda(name string, payload string) (*lambda.InvokeOu
 	}
 	fmt.Printf("%#v", output)
 	return output, nil
+}
+
+func (azn *AWSEngine) CreateStream(name string) (*CreateTopicOutput, error) {
+	koutput, err := azn.KinesisClient.CreateStream(&kinesis.CreateStreamInput{ShardCount: aws.Int64(1), StreamName: &name})
+	if err != nil {
+		fmt.Printf("Error: %#v", err)
+		return nil, err
+	}
+
+	output := &CreateTopicOutput{Resource: koutput.String()}
+	return output, nil
+
+}
+
+func (azn AWSEngine) CreateKinesisSubscriber(topicResourceID string, subscriber string, endpoint string) (*SubscriberOutput, error) {
+	lambdaConf, err := azn.createLambdaSubscriber(topicResourceID, subscriber, endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	output, err := azn.LambdaClient.CreateEventSourceMapping(&lambda.CreateEventSourceMappingInput{FunctionName:lambdaConf.FunctionName,
+		EventSourceArn:&topicResourceID, BatchSize: aws.Int64(1)})
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Error creating subscriber")
+	}
+	return &SubscriberOutput{*output.UUID}, nil
+
+}
+
+func (azn AWSEngine) PublishKinesis(topicResourceID string, message interface{}) (*PublishOutput, error){
+	bytesMessage, _ := json.Marshal(message)
+	publishInput := &kinesis.PutRecordInput{StreamName: &topicResourceID, Data:bytesMessage}
+	output, err := azn.KinesisClient.PutRecord(publishInput)
+	if err != nil {
+		return nil, err
+	}
+	return &PublishOutput{MessageID: *output.SequenceNumber}, nil
 }

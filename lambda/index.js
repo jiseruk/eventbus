@@ -40,6 +40,29 @@ console.log('Loading function');
 
 exports.handler = function(event, context, callback) {
 
+    event.Records.forEach(function(record) {
+        // Kinesis data is base64 encoded so decode here
+        var payload = new Buffer(record.kinesis.data, 'base64').toString('ascii');
+        console.log('Decoded payload:', payload);
+        axios.post(process.env.subscriber_url, {
+            payload: payload,
+            topic: process.env.topic
+        }).then((res) => {
+            console.log(`statusCode: ${res.statusCode}`);
+            if(res.statusCode >= 400){
+                var error = new Error("something is wrong");
+                callback(error);
+            } else {
+                console.log(res);
+                callback(null, "Success");
+            }
+        }).catch((error) => {
+            console.error(error);
+            //context.fail();
+            callback(error);
+        });
+    });
+    /*
     var message = event.Records[0].Sns.Message;
     console.log('Message received from SNS:', message);
     console.log('Topic:', process.env.topic);
@@ -61,5 +84,5 @@ exports.handler = function(event, context, callback) {
         console.error(error);
         //context.fail();
         callback(error);
-    });
+    });*/
 };

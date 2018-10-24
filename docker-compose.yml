@@ -7,9 +7,10 @@ services:
       - '4575:4575'       
       - '4562:4562'  
     environment:
-      SERVICES: lambda,sns       
-      LAMBDA_EXECUTOR: docker-reuse
+      SERVICES: lambda,sns,kinesis,sqs       
+      LAMBDA_EXECUTOR: local
       DOCKER_HOST: unix:///var/run/docker.sock
+      DEBUG: 1
     volumes:
       - "/private${TMPDIR}/localstack:/tmp/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
