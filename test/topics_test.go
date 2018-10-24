@@ -112,6 +112,15 @@ func TestCreateTopic(t *testing.T) {
 		mockDAO.AssertExpectations(t)
 	})
 
+	t.Run("it should fail create the topic if the json fields are invalid", func(t *testing.T) {
+
+		rec := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/topics", strings.NewReader(`{"invalid": "topic", "engine": "AWS"}`))
+		router.ServeHTTP(rec, req)
+		//assert.Contains(t, rec.Body.String(), `{"code": "json_error","status": 400}`)
+		assert.Equal(t, 400, rec.Code)
+	})
+
 
 }
 

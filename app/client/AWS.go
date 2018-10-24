@@ -13,10 +13,13 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/pkg/errors"
+	"github.com/wenance/wequeue-management_api/app/config"
 	"io/ioutil"
 )
 
-const SNSEndpoint = "http://localstack:4575"
+var snsEndpoint = config.Get("engines.AWS.sns")
+var lambdaEndpoint = config.Get("engines.AWS.lambda")
+var kinesisEndpoint = config.Get("engines.AWS.kinesis")
 
 type AWSEngine struct {
 	SNSClient snsiface.SNSAPI
@@ -28,15 +31,15 @@ func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI, kinesisiface.KinesisA
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String("us-east-1"),
 		//Credentials: credentials.NewSharedCredentials("", "default"),
-		Credentials: credentials.NewStaticCredentials("foo", "bar", ""),
+		Credentials: config.GetObject("aws_credentials").(*credentials.Credentials),//credentials.NewStaticCredentials("foo", "bar", ""),
 		//Endpoint:    aws.String(SNSEndpoint),
 	})
 	if err != nil {
 		panic("FATAL: Connot connect to AWS")
 	}
-	snsClient := sns.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint(SNSEndpoint))
-	lambdaClient := lambda.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint("http://localstack:4574"))
-	kinesisClient := kinesis.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint("http://localstack:4574"))
+	snsClient := sns.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint(snsEndpoint))
+	lambdaClient := lambda.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint(lambdaEndpoint))
+	kinesisClient := kinesis.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint(kinesisEndpoint))
 	return snsClient, lambdaClient, kinesisClient
 }
 

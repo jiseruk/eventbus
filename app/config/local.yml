@@ -1,0 +1,12 @@
+engines:
+  AWS:
+    sns: http://localstack:4575
+    lambda: http://localstack:4574
+    kinesis: http://localstack:4568
+
+database:
+  mysql:
+    user: root
+    password: root
+    database: wequeue
+    host: mysql

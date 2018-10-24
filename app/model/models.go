@@ -11,8 +11,8 @@ type EngineEnum string
 type Topic struct {
 	//gorm.Model
 	ID        uint `gorm:"primary_key" json:"-"`
-	Name   string `gorm:"not null;unique" json:"name"`
-	Engine string `json:"engine"`
+	Name   string `gorm:"not null;unique" json:"name" binding:"required"`
+	Engine string `json:"engine" binding:"required"`
 	ResourceID string `json:"resource_id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"-"`

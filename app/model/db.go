@@ -1,10 +1,12 @@
 package model
 
 import (
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/jonboulle/clockwork"
+	"github.com/wenance/wequeue-management_api/app/config"
 )
 
 
@@ -17,7 +19,13 @@ var Clock clockwork.Clock
 
 func NewDB() (*DB, error) {
 	Clock = clockwork.NewRealClock()
-	db, err := gorm.Open("mysql", "root:root@tcp(mysql:3306)/wequeue?charset=utf8&parseTime=True")
+	db, err := gorm.Open("mysql",
+		fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?charset=utf8&parseTime=True",
+			config.Get("database.mysql.user"),
+			config.Get("database.mysql.password"),
+			config.Get("database.mysql.host"),
+			config.Get("database.mysql.database")))
+
 	if err != nil {
 		return nil, err
 	}

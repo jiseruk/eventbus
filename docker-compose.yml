@@ -1,4 +1,9 @@
-version: '3'
+version: '3.4'
+
+x-common-variables: &common-variables
+  MYSQL_DATABASE: wequeue
+  MYSQL_USER: wequeue
+  MYSQL_PASSWORD: wequeue
 
 services:
   localstack:
@@ -17,18 +22,14 @@ services:
 
   mysql:
     image: mysql:latest
-    #build:
-    #  context: .
-    #  dockerfile: Dockerfile.mysql      
     ports:
       - '3306:3306'
     environment:
       MYSQL_ROOT_USER: root
-      MYSQL_DATABASE: wequeue
-      MYSQL_ROOT_PASSWORD: root 
+      MYSQL_ROOT_PASSWORD: root
+      <<: *common-variables
 
   wequeue:
-          #image: signature-service:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -41,4 +42,6 @@ services:
       - localstack:localstack    
     ports:
       - '8080:8080'
- 
+    environment:
+      GO_ENVIRONMENT: local
+      <<: *common-variables
