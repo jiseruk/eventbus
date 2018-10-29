@@ -1,8 +1,15 @@
 engines:
   AWS:
-    sns: http://localstack:4575
-    lambda: http://localstack:4574
-    kinesis: http://localstack:4568
+    region: us-east-1
+    sns: 
+      endpoint: http://localstack:4575
+    kinesis: 
+      endpoint: http://localstack:4568
+    lambda:
+      endpoint: http://localstack:4574 
+      executionRole: "arn:role:dummy"
+    sqs:
+      endpoint: http://localstack:4576
 
 database:
   mysql:
