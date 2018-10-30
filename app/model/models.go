@@ -24,7 +24,7 @@ type Subscriber struct {
 	ID             uint      `gorm:"primary_key" json:"-"`
 	Name           string    `gorm:"not null;unique" json:"name"`
 	ResourceID     string    `json:"resource_id"`
-	Endpoint       string    `gorm:"not null;unique" json:"endpoint"`
+	Endpoint       string    `gorm:"not null;unique" json:"endpoint" binding:"url"`
 	Topic          string    `json:"topic"`
 	PullResourceID string    `json:"-"`
 	CreatedAt      time.Time `json:"created_at"`

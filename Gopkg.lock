@@ -3,7 +3,7 @@
 
 [[projects]]
   name = "github.com/aws/aws-sdk-go"
-  packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/credentials/endpointcreds","aws/credentials/stscreds","aws/csm","aws/defaults","aws/ec2metadata","aws/endpoints","aws/request","aws/session","aws/signer/v4","internal/sdkio","internal/sdkrand","internal/sdkuri","internal/shareddefaults","private/protocol","private/protocol/json/jsonutil","private/protocol/jsonrpc","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/restjson","private/protocol/xml/xmlutil","service/kinesis","service/kinesis/kinesisiface","service/lambda","service/lambda/lambdaiface","service/sns","service/sns/snsiface","service/sts"]
+  packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/credentials/endpointcreds","aws/credentials/stscreds","aws/csm","aws/defaults","aws/ec2metadata","aws/endpoints","aws/request","aws/session","aws/signer/v4","internal/sdkio","internal/sdkrand","internal/sdkuri","internal/shareddefaults","private/protocol","private/protocol/json/jsonutil","private/protocol/jsonrpc","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/restjson","private/protocol/xml/xmlutil","service/kinesis","service/kinesis/kinesisiface","service/lambda","service/lambda/lambdaiface","service/sns","service/sns/snsiface","service/sqs","service/sqs/sqsiface","service/sts"]
   revision = "59124d90523f4c0491f997f9a36aef265fe3502c"
   version = "v1.15.49"
 
@@ -231,6 +231,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8e0265b712224795d9fd37ce13ef18eb769c812c80aaf6392b97e722f2f98569"
+  inputs-digest = "d616bcbb9ca4b3d8a4b29226ebd9626750c9373ab3f389a6271045e2592cd612"
   solver-name = "gps-cdcl"
   solver-version = 1

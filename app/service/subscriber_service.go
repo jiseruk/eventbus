@@ -25,7 +25,9 @@ func (s SubscriptionServiceImpl) CreateSubscription(name string, endpoint string
 	if apierr != nil {
 		return nil, apierr
 	}
-
+	if topicObj == nil {
+		return nil, app.NewAPIError(http.StatusBadRequest, "validation_error", fmt.Sprintf("The topic %s doesn't exist", topic))
+	}
 	subscription, err := s.Dao.GetSubscription(name)
 	if err != nil {
 		return nil, app.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
