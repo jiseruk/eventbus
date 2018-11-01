@@ -91,6 +91,10 @@ func (azn AWSStreamEngine) ReceiveMessages(resourceID string, maxMessages int64)
 	return messages, nil
 }
 
+func (azn AWSStreamEngine) DeleteMessages(messages []model.Message, queueUrl string) ([]*model.Message, error) {
+	return nil, errors.New("You can't delete messages in this stream topic")
+}
+
 func (azn AWSStreamEngine) GetName() string {
 	return "AWSStream"
 }

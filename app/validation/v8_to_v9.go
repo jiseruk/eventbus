@@ -1,6 +1,7 @@
-package main
+package validation
 
 import (
+	"fmt"
 	"reflect"
 	"sync"
 
@@ -16,6 +17,7 @@ type defaultValidator struct {
 var _ binding.StructValidator = &defaultValidator{}
 
 func init() {
+	fmt.Printf("Changing validator version to V9")
 	binding.Validator = new(defaultValidator)
 
 }

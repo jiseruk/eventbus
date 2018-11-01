@@ -15,6 +15,7 @@ import (
 	"github.com/wenance/wequeue-management_api/app/model"
 	"github.com/wenance/wequeue-management_api/app/server"
 	"github.com/wenance/wequeue-management_api/app/service"
+	_ "github.com/wenance/wequeue-management_api/app/validation"
 )
 
 func TestCreateTopic(t *testing.T) {
@@ -121,6 +122,7 @@ func TestCreateTopic(t *testing.T) {
 		{body: `{"invalid": "topic", "invalid2": "AWS"}`},
 		{body: `{"engine": "AWS"}`},
 		{body: `{"name": "topic"}`},
+		{body: `{"name": "topic", "engine": "invalid"}`},
 		{body: `{}`},
 		{body: ``},
 	} {

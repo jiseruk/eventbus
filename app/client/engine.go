@@ -20,6 +20,7 @@ type EngineService interface {
 	Publish(topicResourceID string, message interface{}) (*PublishOutput, error)
 	CreateSubscriber(topic model.Topic, subscriber string, endpoint string) (*SubscriberOutput, error)
 	ReceiveMessages(resourceID string, maxMessages int64) (*model.Messages, error)
+	DeleteMessages(messages []model.Message, queueUrl string) ([]*model.Message, error)
 	GetName() string
 }
 

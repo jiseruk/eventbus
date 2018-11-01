@@ -3,6 +3,8 @@ package server
 import (
 	"log"
 
+	"github.com/swaggo/gin-swagger"
+	"github.com/swaggo/gin-swagger/swaggerFiles"
 	"github.com/wenance/wequeue-management_api/app/client"
 	"github.com/wenance/wequeue-management_api/app/model"
 	"github.com/wenance/wequeue-management_api/app/service"
@@ -11,6 +13,8 @@ import (
 
 func Init() {
 	r := GetRouter()
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	sns, lambda, kinesis, sqs := client.GetClients()
 
 	utils.RecursiveZip("/go/src/github.com/wenance/wequeue-management_api/lambda/", "/tmp/function.zip")

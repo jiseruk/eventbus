@@ -12,6 +12,7 @@ import (
 	"github.com/wenance/wequeue-management_api/app/model"
 	"github.com/wenance/wequeue-management_api/app/server"
 	"github.com/wenance/wequeue-management_api/app/service"
+	_ "github.com/wenance/wequeue-management_api/app/validation"
 )
 
 func TestPublishMessage(t *testing.T) {

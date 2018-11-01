@@ -20,8 +20,9 @@ func GetRouter() *gin.Engine {
 	publishers := controller.PublisherController{}
 
 	router.POST("/topics", topics.Create)
-	router.POST("/subscriptions", subscribers.Create)
+	router.POST("/subscribers", subscribers.Create)
 	router.GET("/messages", subscribers.Consume)
+	router.DELETE("/messages", subscribers.DeleteMessages)
 	router.POST("/messages", publishers.Publish)
 
 	router.POST("/test_subscriber", func(c *gin.Context) {

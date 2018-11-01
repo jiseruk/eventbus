@@ -41,14 +41,14 @@ func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI, kinesisiface.KinesisA
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String("us-east-1"),
 		//Credentials: credentials.NewSharedCredentials("", "default"),
-		Credentials: config.GetObject("aws_credentials").(*credentials.Credentials), //credentials.NewStaticCredentials("foo", "bar", ""),
+		Credentials: config.GetObject("aws_credentials").(*credentials.Credentials),
 		//Endpoint:    aws.String(SNSEndpoint),
 	})
 	if err != nil {
 		panic("FATAL: Connot connect to AWS")
 	}
 	snsClient := sns.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint(snsEndpoint))
-	lambdaClient := lambda.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint(lambdaEndpoint))
+	lambdaClient := lambda.New(sess, aws.NewConfig().WithEndpoint(lambdaEndpoint))
 	kinesisClient := kinesis.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint(kinesisEndpoint))
 	sqsClient := sqs.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint(sqsEndpoint))
 	return snsClient, lambdaClient, kinesisClient, sqsClient
@@ -126,9 +126,12 @@ func (azn AWSEngine) ReceiveMessages(resourceID string, maxMessages int64) (*mod
 	if err != nil {
 		return nil, err
 	}
+
 	messages := &model.Messages{Messages: make([]model.Message, len(output.Messages))}
 	for i, msg := range output.Messages {
-		messages.Messages[i] = model.Message{Payload: msg.Body, MessageID: *msg.MessageId}
+		var payload interface{}
+		json.Unmarshal([]byte(*msg.Body), &payload)
+		messages.Messages[i] = model.Message{Payload: payload, MessageID: *msg.MessageId}
 	}
 	return messages, nil
 }
@@ -172,6 +175,25 @@ func createLambdaSubscriber(client lambdaiface.LambdaAPI, topic string, subscrib
 		fmt.Println(result)
 		return result, nil
 	}
+}
+
+func (azn AWSEngine) DeleteMessages(messages []model.Message, queueUrl string) ([]*model.Message, error) {
+	messagesToDelete := make([]*sqs.DeleteMessageBatchRequestEntry, len(messages))
+	for i, message := range messages {
+		messagesToDelete[i] = &sqs.DeleteMessageBatchRequestEntry{Id: &message.MessageID, ReceiptHandle: message.DeleteToken}
+	}
+	output, err := azn.SQSClient.DeleteMessageBatch(&sqs.DeleteMessageBatchInput{Entries: messagesToDelete, QueueUrl: &queueUrl})
+	if err != nil {
+		return nil, err
+	}
+	failedDeleteMessages := make([]*model.Message, 0)
+	for _, errorMsg := range output.Failed {
+		msg := &model.Message{MessageID: *errorMsg.Id}
+		msg.DeleteError.Code = errorMsg.Code
+		msg.DeleteError.Message = errorMsg.Message
+		failedDeleteMessages = append(failedDeleteMessages, &model.Message{MessageID: *errorMsg.Id})
+	}
+	return failedDeleteMessages, nil
 }
 
 func (azn AWSEngine) InvokeLambda(name string, payload string) (*lambda.InvokeOutput, error) {

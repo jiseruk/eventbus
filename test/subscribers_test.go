@@ -1,7 +1,6 @@
 package test
 
 import (
-	"fmt"
 	"io/ioutil"
 	"testing"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/wenance/wequeue-management_api/app/model"
 	"github.com/wenance/wequeue-management_api/app/server"
 	"github.com/wenance/wequeue-management_api/app/service"
+	_ "github.com/wenance/wequeue-management_api/app/validation"
 )
 
 func TestCreateSubscription(t *testing.T) {
@@ -58,11 +58,10 @@ func TestCreateSubscription(t *testing.T) {
 		mockDAO.On("CreateSubscription", "subs", "topic", "http://subscriber/endp", "arn:subs", "queueUrl").
 			Return(subscriber, nil).Once()
 
-		rec := executeMockedRequest(router, "POST", "/subscriptions", `{"topic": "topic", "name":"subs", "endpoint":"http://subscriber/endp"}`)
+		rec := executeMockedRequest(router, "POST", "/subscribers", `{"topic": "topic", "name":"subs", "endpoint":"http://subscriber/endp"}`)
 
 		assert.Equal(t, 201, rec.Code)
-		assert.JSONEq(t,
-			fmt.Sprintf(`{"topic": "topic", "name":"subs", "endpoint":"http://subscriber/endp", "resource_id":"arn:subs", "created_at": "%s"}`, model.Clock.Now().Format("2006-01-02T15:04:05Z")),
+		assert.JSONEq(t, `{"topic": "topic", "name":"subs", "endpoint":"http://subscriber/endp"}`,
 			rec.Body.String())
 		topicServiceMock.AssertExpectations(t)
 		mockDAO.AssertExpectations(t)
@@ -72,17 +71,75 @@ func TestCreateSubscription(t *testing.T) {
 	})
 
 	t.Run("it should fail creating the subscriber if the endpoint is not a valid url", func(t *testing.T) {
-		rec := executeMockedRequest(router, "POST", "/subscriptions", `{"topic": "topic", "name":"subs", "endpoint":"/endp"}`)
+		rec := executeMockedRequest(router, "POST", "/subscribers", `{"topic": "topic", "name":"subs", "endpoint":"/endp"}`)
 		assert.Equal(t, 400, rec.Code)
 	})
 
 	t.Run("it should fail creating the subscriber if the topic doesn't exist", func(t *testing.T) {
 		topicServiceMock.On("GetTopic", "topic").Return(nil, nil).Once()
-		rec := executeMockedRequest(router, "POST", "/subscriptions", `{"topic": "topic", "name":"subs", "endpoint":"http://subscriber/endp"}`)
+		rec := executeMockedRequest(router, "POST", "/subscribers", `{"topic": "topic", "name":"subs", "endpoint":"http://subscriber/endp"}`)
 
 		assert.Equal(t, 400, rec.Code)
 		assert.Equal(t, `{"message":"The topic topic doesn't exist","code":"validation_error","status":400}`,
 			rec.Body.String())
 	})
 
+	for _, r := range []struct {
+		body string
+		err  string
+	}{
+		{body: `{"topic": "topic", "endpoint": "lala"}`, err: "name is not present"},
+		{body: `{"topic": "topic", "endpoint": "lala", "name":null}`, err: "name is null"},
+		{body: `{"name": 10, "endpoint": "http://www.ole.com.ar", "topic": "topic"}`, err: "name is numeric"},
+		{body: `{"name": "", "endpoint": "http://www.ole.com.ar", "topic": "topic"}`, err: "name is empty"},
+		{body: `{"name": "subscriber", "topic": "topic"}`},
+		{body: `{"name": "subscriber", "endpoint": 8}`},
+		{body: `{"invalid": "topic", "invalid2": "lala"}`},
+		{body: `{"topic": "topic"}`},
+		{body: `{"name": "subscriber", "topic":"", "endpoint": "http://www.ole.com.ar"}`, err: "topic is empty"},
+		{body: `{}`},
+		{body: ``},
+	} {
+		t.Run("it should fail create the subscriber if the json fields are invalid ["+r.err+"]", func(t *testing.T) {
+
+			res := executeMockedRequest(router, "POST", "/subscribers", r.body)
+			assert.Contains(t, res.Body.String(), `"code":"json_error"`)
+			assert.Equal(t, 400, res.Code, res.Body.String())
+		})
+	}
+}
+
+func TestDeleteMessages(t *testing.T) {
+	router := server.GetRouter()
+
+	t.Run("It should delete specific messages from dead letter queue", func(t *testing.T) {
+		mockSQS := &SQSAPIMock{}
+		mockDAO := &SubscriptionsDaoMock{}
+		subscriber := &model.Subscriber{Endpoint: "http://subscriber/endp", Name: "subs", Topic: "topic",
+			ResourceID: "arn:subs", PullResourceID: "queue:subs"}
+
+		topicServiceMock := &TopicServiceMock{}
+		service.TopicsService = topicServiceMock
+		service.SubscriptionsService = service.SubscriptionServiceImpl{Dao: mockDAO}
+		client.EnginesMap["AWS"] = &client.AWSEngine{SQSClient: mockSQS}
+		mockDAO.On("GetSubscription", "subs").
+			Return(subscriber, nil).Once()
+		//Topic should exist
+		topicServiceMock.On("GetTopic", "topic").
+			Return(&model.Topic{ResourceID: "arn:topic", Name: "topic", Engine: "AWS"}, nil).Once()
+
+		mockSQS.On("DeleteMessageBatch", &sqs.DeleteMessageBatchInput{
+			Entries: []*sqs.DeleteMessageBatchRequestEntry{
+				{Id: aws.String("1"), ReceiptHandle: aws.String("x")},
+			}, QueueUrl: aws.String("queue:subs")}).
+			Return(&sqs.DeleteMessageBatchOutput{Failed: make([]*sqs.BatchResultErrorEntry, 0)}, nil).Once()
+
+		res := executeMockedRequest(router, "DELETE", "/messages", `{"subscriber":"subs", "messages": [{"message_id":"1", "delete_token":"x"}]}`)
+		assert.Equal(t, 200, res.Code)
+		assert.Equal(t, `{"failed":[]}`, res.Body.String())
+		mockSQS.AssertExpectations(t)
+		mockDAO.AssertExpectations(t)
+		topicServiceMock.AssertExpectations(t)
+
+	})
 }

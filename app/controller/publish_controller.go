@@ -12,6 +12,17 @@ import (
 type PublisherController struct {
 }
 
+// Publish godoc
+// @Summary Publish a message in a topic
+// @Description add by json a message in a topic
+// @Tags publishers
+// @Accept json
+// @Produce json
+// @Param body body model.PublishMessage true "The message to publish"
+// @Success 201 {object} model.PublishMessage
+// @Failure 400 {object} app.APIError
+// @Failure 500 {object} app.APIError
+// @Router /publishers [post]
 func (t PublisherController) Publish(c *gin.Context) {
 	var message model.PublishMessage
 	if err := c.ShouldBindJSON(&message); err != nil {
