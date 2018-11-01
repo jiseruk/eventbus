@@ -27,7 +27,7 @@ func TestCreateSubscription(t *testing.T) {
 	service.TopicsService = topicServiceMock
 	service.SubscriptionsService = service.SubscriptionServiceImpl{Dao: mockDAO}
 
-	t.Run("It should create the subscription in aws and DB", func(t *testing.T) {
+	t.Run("It should create a subscriber to a topic", func(t *testing.T) {
 		mockLambda := &LambdaAPIMock{}
 		mockSNS := &SNSAPIMock{}
 		mockSQS := &SQSAPIMock{}
@@ -109,6 +109,41 @@ func TestCreateSubscription(t *testing.T) {
 	}
 }
 
+func TestConsumeDeadLetterQueueMessages(t *testing.T) {
+	router := server.GetRouter()
+	t.Run("It should get messages from dead letter queue", func(t *testing.T) {
+		mockSQS := &SQSAPIMock{}
+		mockDAO := &SubscriptionsDaoMock{}
+		subscriber := &model.Subscriber{Endpoint: "http://subscriber/endp", Name: "subs", Topic: "topic",
+			ResourceID: "arn:subs", PullResourceID: "queue:subs"}
+
+		topicServiceMock := &TopicServiceMock{}
+		service.TopicsService = topicServiceMock
+		service.SubscriptionsService = service.SubscriptionServiceImpl{Dao: mockDAO}
+		client.EnginesMap["AWS"] = &client.AWSEngine{SQSClient: mockSQS}
+		mockDAO.On("GetSubscription", "subs").
+			Return(subscriber, nil).Once()
+		//Topic should exist
+		topicServiceMock.On("GetTopic", "topic").
+			Return(&model.Topic{ResourceID: "arn:topic", Name: "topic", Engine: "AWS"}, nil).Once()
+
+		mockSQS.On("ReceiveMessage", &sqs.ReceiveMessageInput{
+			MaxNumberOfMessages: aws.Int64(10), QueueUrl: aws.String("queue:subs")}).
+			Return(&sqs.ReceiveMessageOutput{
+				Messages: []*sqs.Message{
+					{Body: aws.String(`{"msg":"lala"}`), MessageId: aws.String("1"), ReceiptHandle: aws.String("x")},
+				},
+			}, nil).Once()
+
+		res := executeMockedRequest(router, "GET", "/messages?subscriber=subs&max_messages=10", "")
+		assert.Equal(t, 200, res.Code)
+		assert.Equal(t, `{"topic":"topic","messages":[{"payload":{"msg":"lala"},"message_id":"1","delete_token":"x"}]}`, res.Body.String())
+		mockSQS.AssertExpectations(t)
+		mockDAO.AssertExpectations(t)
+		topicServiceMock.AssertExpectations(t)
+
+	})
+}
 func TestDeleteMessages(t *testing.T) {
 	router := server.GetRouter()
 
@@ -136,7 +171,7 @@ func TestDeleteMessages(t *testing.T) {
 
 		res := executeMockedRequest(router, "DELETE", "/messages", `{"subscriber":"subs", "messages": [{"message_id":"1", "delete_token":"x"}]}`)
 		assert.Equal(t, 200, res.Code)
-		assert.Equal(t, `{"failed":[]}`, res.Body.String())
+		assert.Equal(t, `{"failed":[],"topic":"topic"}`, res.Body.String())
 		mockSQS.AssertExpectations(t)
 		mockDAO.AssertExpectations(t)
 		topicServiceMock.AssertExpectations(t)

@@ -12,7 +12,7 @@ import (
 type SubscriptionService interface {
 	CreateSubscription(name string, endpoint string, topic string) (*model.Subscriber, *app.APIError)
 	ConsumeMessages(subscriber string, maxCount int64) (*model.Messages, *app.APIError)
-	DeleteMessages(subscriber string, messages []model.Message) ([]*model.Message, *app.APIError)
+	DeleteMessages(subscriber string, messages []model.Message) (*model.Messages, *app.APIError)
 }
 
 type SubscriptionServiceImpl struct {
@@ -60,10 +60,10 @@ func (s SubscriptionServiceImpl) ConsumeMessages(subscriber string, maxCount int
 	engine := client.GetEngineService(topic.Engine)
 	messages, _ := engine.ReceiveMessages(subscriberObj.PullResourceID, maxCount)
 
-	return messages, nil
+	return &model.Messages{Messages: messages, Topic: topic.Name}, nil
 }
 
-func (s SubscriptionServiceImpl) DeleteMessages(subscriber string, messages []model.Message) ([]*model.Message, *app.APIError) {
+func (s SubscriptionServiceImpl) DeleteMessages(subscriber string, messages []model.Message) (*model.Messages, *app.APIError) {
 	//TODO: manage errors
 	subscriberObj, err := s.Dao.GetSubscription(subscriber)
 	if err != nil {
@@ -73,5 +73,5 @@ func (s SubscriptionServiceImpl) DeleteMessages(subscriber string, messages []mo
 	engine := client.GetEngineService(topic.Engine)
 	result, _ := engine.DeleteMessages(messages, subscriberObj.PullResourceID)
 
-	return result, nil
+	return &model.Messages{Messages: result, Topic: topic.Name}, nil
 }

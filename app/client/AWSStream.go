@@ -71,7 +71,7 @@ func (azn *AWSStreamEngine) DeleteTopic(resource string) error {
 	return err
 }
 
-func (azn AWSStreamEngine) ReceiveMessages(resourceID string, maxMessages int64) (*model.Messages, error) {
+func (azn AWSStreamEngine) ReceiveMessages(resourceID string, maxMessages int64) ([]model.Message, error) {
 	shards, err := azn.KinesisClient.GetShardIterator(&kinesis.GetShardIteratorInput{StreamName: &resourceID,
 		ShardId: aws.String("1")})
 
@@ -82,16 +82,15 @@ func (azn AWSStreamEngine) ReceiveMessages(resourceID string, maxMessages int64)
 	if err != nil {
 		return nil, err
 	}
-	messages := &model.Messages{Messages: make([]model.Message, len(output.Records))}
+	messages := make([]model.Message, len(output.Records))
 	for i, record := range output.Records {
-		messages.Messages[i] = model.Message{Payload: record.Data, MessageID: *record.SequenceNumber}
-
+		messages[i] = model.Message{Payload: record.Data, MessageID: *record.SequenceNumber}
 	}
 
 	return messages, nil
 }
 
-func (azn AWSStreamEngine) DeleteMessages(messages []model.Message, queueUrl string) ([]*model.Message, error) {
+func (azn AWSStreamEngine) DeleteMessages(messages []model.Message, queueUrl string) ([]model.Message, error) {
 	return nil, errors.New("You can't delete messages in this stream topic")
 }
 

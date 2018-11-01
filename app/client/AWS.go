@@ -121,17 +121,17 @@ func (azn AWSEngine) CreateSubscriber(topic model.Topic, subscriber string, endp
 
 }
 
-func (azn AWSEngine) ReceiveMessages(resourceID string, maxMessages int64) (*model.Messages, error) {
+func (azn AWSEngine) ReceiveMessages(resourceID string, maxMessages int64) ([]model.Message, error) {
 	output, err := azn.SQSClient.ReceiveMessage(&sqs.ReceiveMessageInput{QueueUrl: &resourceID, MaxNumberOfMessages: &maxMessages})
 	if err != nil {
 		return nil, err
 	}
 
-	messages := &model.Messages{Messages: make([]model.Message, len(output.Messages))}
+	messages := make([]model.Message, len(output.Messages))
 	for i, msg := range output.Messages {
 		var payload interface{}
 		json.Unmarshal([]byte(*msg.Body), &payload)
-		messages.Messages[i] = model.Message{Payload: payload, MessageID: *msg.MessageId}
+		messages[i] = model.Message{Payload: payload, MessageID: *msg.MessageId, DeleteToken: msg.ReceiptHandle}
 	}
 	return messages, nil
 }
@@ -177,7 +177,7 @@ func createLambdaSubscriber(client lambdaiface.LambdaAPI, topic string, subscrib
 	}
 }
 
-func (azn AWSEngine) DeleteMessages(messages []model.Message, queueUrl string) ([]*model.Message, error) {
+func (azn AWSEngine) DeleteMessages(messages []model.Message, queueUrl string) ([]model.Message, error) {
 	messagesToDelete := make([]*sqs.DeleteMessageBatchRequestEntry, len(messages))
 	for i, message := range messages {
 		messagesToDelete[i] = &sqs.DeleteMessageBatchRequestEntry{Id: &message.MessageID, ReceiptHandle: message.DeleteToken}
@@ -186,12 +186,12 @@ func (azn AWSEngine) DeleteMessages(messages []model.Message, queueUrl string) (
 	if err != nil {
 		return nil, err
 	}
-	failedDeleteMessages := make([]*model.Message, 0)
+	failedDeleteMessages := make([]model.Message, 0)
 	for _, errorMsg := range output.Failed {
-		msg := &model.Message{MessageID: *errorMsg.Id}
+		msg := model.Message{MessageID: *errorMsg.Id}
 		msg.DeleteError.Code = errorMsg.Code
 		msg.DeleteError.Message = errorMsg.Message
-		failedDeleteMessages = append(failedDeleteMessages, &model.Message{MessageID: *errorMsg.Id})
+		failedDeleteMessages = append(failedDeleteMessages, model.Message{MessageID: *errorMsg.Id})
 	}
 	return failedDeleteMessages, nil
 }

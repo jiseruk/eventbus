@@ -51,18 +51,18 @@ type PublishMessage struct {
 }
 
 type Messages struct {
-	Topic    string
-	Messages []Message
+	Topic    string    `json:"topic"`
+	Messages []Message `json:"messages"`
 }
 
 type Message struct {
 	Payload     interface{} `json:"payload"`
 	MessageID   string      `json:"message_id"`
 	DeleteToken *string     `json:"delete_token"`
-	DeleteError struct {
-		Code    *string
-		Message *string
-	}
+	DeleteError *struct {
+		Code    *string `json:"code,omitempty"`
+		Message *string `json:"message,omitempty"`
+	} `json:"delete_error,omitempty"`
 }
 
 type ConsumerRequest struct {
@@ -76,5 +76,6 @@ type DeleteDeadLetterQueueMessagesRequest struct {
 }
 
 type DeleteDeadLetterQueueMessagesResponse struct {
-	Failed []*Message `json:"failed"`
+	Failed []Message `json:"failed"`
+	Topic  string    `json:"topic"`
 }
