@@ -56,13 +56,15 @@ type Messages struct {
 }
 
 type Message struct {
-	Payload     interface{} `json:"payload"`
-	MessageID   string      `json:"message_id"`
-	DeleteToken *string     `json:"delete_token"`
-	DeleteError *struct {
-		Code    *string `json:"code,omitempty"`
-		Message *string `json:"message,omitempty"`
-	} `json:"delete_error,omitempty"`
+	Payload     interface{}  `json:"payload"`
+	MessageID   string       `json:"message_id"`
+	DeleteToken *string      `json:"delete_token"`
+	DeleteError *deleteError `json:"delete_error,omitempty"`
+}
+
+type deleteError struct {
+	Code    *string `json:"code,omitempty"`
+	Message *string `json:"message,omitempty"`
 }
 
 type ConsumerRequest struct {
