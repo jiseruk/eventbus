@@ -28,6 +28,11 @@ services:
       MYSQL_ROOT_USER: root
       MYSQL_ROOT_PASSWORD: root
       <<: *common-variables
+  
+  subscriber:
+    image: subscriber:latest
+    ports:
+      - '9292:9292'
 
   wequeue:
     build:
@@ -40,6 +45,7 @@ services:
     links:
       - mysql:mysql
       - localstack:localstack    
+      - subscriber:subscriber
     ports:
       - '8080:8080'
     environment:
