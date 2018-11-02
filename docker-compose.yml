@@ -10,7 +10,9 @@ services:
     image: localstack/localstack
     ports:
       - '4575:4575'       
-      - '4562:4562'  
+      - '4576:4576'  
+      - '4568:4568'  
+      - '4574:4574'  
     environment:
       SERVICES: lambda,sns,kinesis,sqs       
       LAMBDA_EXECUTOR: local

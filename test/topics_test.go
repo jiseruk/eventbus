@@ -3,20 +3,20 @@ package test
 import (
 	"errors"
 	"fmt"
-	"github.com/jonboulle/clockwork"
-	"github.com/stretchr/testify/assert"
-	"github.com/wenance/wequeue-management_api/app/client"
-	"github.com/wenance/wequeue-management_api/app/model"
-	"github.com/wenance/wequeue-management_api/app/server"
-	"github.com/wenance/wequeue-management_api/app/service"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/jonboulle/clockwork"
+	"github.com/stretchr/testify/assert"
+	"github.com/wenance/wequeue-management_api/app/client"
+	"github.com/wenance/wequeue-management_api/app/model"
+	"github.com/wenance/wequeue-management_api/app/server"
+	"github.com/wenance/wequeue-management_api/app/service"
+	_ "github.com/wenance/wequeue-management_api/app/validation"
 )
-
 
 func TestCreateTopic(t *testing.T) {
 	model.Clock = clockwork.NewFakeClock()
@@ -25,8 +25,8 @@ func TestCreateTopic(t *testing.T) {
 	router := server.GetRouter()
 
 	t.Run("It should create the topic in AWS and the DB entity", func(t *testing.T) {
-		client.EnginesMap["AWS"] = &client.AWSEngine{SNSClient:mockSNS }
-		service.TopicsService = service.TopicServiceImpl{mockDAO}
+		client.EnginesMap["AWS"] = &client.AWSEngine{SNSClient: mockSNS}
+		service.TopicsService = service.TopicServiceImpl{Db: mockDAO}
 		var topic = "topic"
 		var resource = "arn:topic"
 		topicMock := getTopicMock(topic, "AWS", resource)
@@ -46,7 +46,7 @@ func TestCreateTopic(t *testing.T) {
 	})
 
 	t.Run("it should fail create the topic if it already exists", func(t *testing.T) {
-		service.TopicsService = service.TopicServiceImpl{mockDAO}
+		service.TopicsService = service.TopicServiceImpl{Db: mockDAO}
 		var topic = "topic"
 		mockDAO.On("GetTopic", topic).Return(&model.Topic{Name: topic}, nil).Once()
 
@@ -61,7 +61,7 @@ func TestCreateTopic(t *testing.T) {
 	})
 
 	t.Run("it should fail create the topic if a dao.GetTopic() error happend", func(t *testing.T) {
-		service.TopicsService = service.TopicServiceImpl{mockDAO}
+		service.TopicsService = service.TopicServiceImpl{Db: mockDAO}
 		var topic = "topic"
 		mockDAO.On("GetTopic", topic).Return(nil, errors.New("database error")).Once()
 
@@ -75,8 +75,8 @@ func TestCreateTopic(t *testing.T) {
 	})
 
 	t.Run("it should fail create the topic if a dao.CreateTopic() error happend", func(t *testing.T) {
-		client.EnginesMap["AWS"] = &client.AWSEngine{SNSClient:mockSNS }
-		service.TopicsService = service.TopicServiceImpl{mockDAO}
+		client.EnginesMap["AWS"] = &client.AWSEngine{SNSClient: mockSNS}
+		service.TopicsService = service.TopicServiceImpl{Db: mockDAO}
 		var topic = "topic"
 		var resource = "arn:topic"
 
@@ -95,8 +95,8 @@ func TestCreateTopic(t *testing.T) {
 	})
 
 	t.Run("It should fail creating the topic if an engine.CreateTopic() error happends", func(t *testing.T) {
-		client.EnginesMap["AWS"] = &client.AWSEngine{SNSClient:mockSNS }
-		service.TopicsService = service.TopicServiceImpl{mockDAO}
+		client.EnginesMap["AWS"] = &client.AWSEngine{SNSClient: mockSNS}
+		service.TopicsService = service.TopicServiceImpl{Db: mockDAO}
 		var topic = "topic"
 
 		mockDAO.On("GetTopic", topic).Return(nil, nil).Once()
@@ -112,15 +112,26 @@ func TestCreateTopic(t *testing.T) {
 		mockDAO.AssertExpectations(t)
 	})
 
-	t.Run("it should fail create the topic if the json fields are invalid", func(t *testing.T) {
+	for _, r := range []struct {
+		body string
+	}{
+		{body: `{"invalid": "topic", "engine": "AWS"}`},
+		{body: `{"name": "topic", "invalid": "AWS"}`},
+		{body: `{"name": 5, "engine": "AWS"}`},
+		{body: `{"name": "topic", "engine": 8}`},
+		{body: `{"invalid": "topic", "invalid2": "AWS"}`},
+		{body: `{"engine": "AWS"}`},
+		{body: `{"name": "topic"}`},
+		{body: `{"name": "topic", "engine": "invalid"}`},
+		{body: `{}`},
+		{body: ``},
+	} {
+		t.Run("it should fail create the topic if the json fields are invalid", func(t *testing.T) {
 
-		rec := httptest.NewRecorder()
-		req, _ := http.NewRequest("POST", "/topics", strings.NewReader(`{"invalid": "topic", "engine": "AWS"}`))
-		router.ServeHTTP(rec, req)
-		//assert.Contains(t, rec.Body.String(), `{"code": "json_error","status": 400}`)
-		assert.Equal(t, 400, rec.Code)
-	})
-
+			res := executeMockedRequest(router, "POST", "/topics", r.body)
+			assert.Contains(t, res.Body.String(), `"code":"json_error"`)
+			assert.Equal(t, 400, res.Code, res.Body.String())
+		})
+	}
 
 }
-
