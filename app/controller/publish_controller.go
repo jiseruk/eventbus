@@ -22,7 +22,7 @@ type PublisherController struct {
 // @Success 201 {object} model.PublishMessage
 // @Failure 400 {object} app.APIError
 // @Failure 500 {object} app.APIError
-// @Router /publishers [post]
+// @Router /messages [post]
 func (t PublisherController) Publish(c *gin.Context) {
 	var message model.PublishMessage
 	if err := c.ShouldBindJSON(&message); err != nil {

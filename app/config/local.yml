@@ -10,6 +10,8 @@ engines:
       executionRole: "arn:role:dummy"
     sqs:
       endpoint: http://localstack:4576
+    dynamodb:
+      endpoint: http://localstack:4569
 
 database:
   mysql:
