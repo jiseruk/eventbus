@@ -21,7 +21,7 @@
 
 [[projects]]
   name = "github.com/aws/aws-sdk-go"
-  packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/credentials/endpointcreds","aws/credentials/stscreds","aws/csm","aws/defaults","aws/ec2metadata","aws/endpoints","aws/request","aws/session","aws/signer/v4","internal/sdkio","internal/sdkrand","internal/sdkuri","internal/shareddefaults","private/protocol","private/protocol/json/jsonutil","private/protocol/jsonrpc","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/restjson","private/protocol/xml/xmlutil","service/kinesis","service/kinesis/kinesisiface","service/lambda","service/lambda/lambdaiface","service/sns","service/sns/snsiface","service/sqs","service/sqs/sqsiface","service/sts"]
+  packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/credentials/endpointcreds","aws/credentials/stscreds","aws/csm","aws/defaults","aws/ec2metadata","aws/endpoints","aws/request","aws/session","aws/signer/v4","internal/sdkio","internal/sdkrand","internal/sdkuri","internal/shareddefaults","private/protocol","private/protocol/json/jsonutil","private/protocol/jsonrpc","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/restjson","private/protocol/xml/xmlutil","service/dynamodb","service/dynamodb/dynamodbattribute","service/dynamodb/dynamodbiface","service/kinesis","service/kinesis/kinesisiface","service/lambda","service/lambda/lambdaiface","service/sns","service/sns/snsiface","service/sqs","service/sqs/sqsiface","service/sts"]
   revision = "59124d90523f4c0491f997f9a36aef265fe3502c"
   version = "v1.15.49"
 
@@ -297,6 +297,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f79fcc95db5067a8afb69586e409bfafa0c61777b5106f2c7338ca5b770ee0cd"
+  inputs-digest = "f5d66af7379e4914b4cac414957b1e72c10a42500f14310519a9ceae55ae2cc4"
   solver-name = "gps-cdcl"
   solver-version = 1

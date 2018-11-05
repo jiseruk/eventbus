@@ -65,6 +65,17 @@ func (t SubscriptionController) Consume(c *gin.Context) {
 	c.JSON(http.StatusOK, &messages)
 }
 
+// DeleteMessages godoc
+// @Summary Delete messages from Dead Letter Queue
+// @Description delete already processed messages from the subscriber's dead letter queue
+// @Tags subscribers
+// @Accept json
+// @Produce json
+// @Param body body model.DeleteDeadLetterQueueMessagesRequest true "The messages list to delete"
+// @Success 200 {object} model.DeleteDeadLetterQueueMessagesResponse
+// @Failure 400 {object} app.APIError
+// @Failure 500 {object} app.APIError
+// @Router /messages [delete]
 func (t SubscriptionController) DeleteMessages(c *gin.Context) {
 	var deleteReq model.DeleteDeadLetterQueueMessagesRequest
 	if err := c.ShouldBindJSON(&deleteReq); err != nil {

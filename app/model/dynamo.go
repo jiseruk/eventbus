@@ -9,12 +9,6 @@ import (
 	"github.com/wenance/wequeue-management_api/app/config"
 )
 
-/*
-type DynamoDB struct {
-	//Mock with https://github.com/Selvatico/go-mocket/wiki/Documentation
-	dynamoClient dynamodbiface.DynamoDBAPI
-}
-*/
 var dynamoEndpoint = config.Get("engines.AWS.dynamodb.endpoint")
 
 func GetClient() dynamodbiface.DynamoDBAPI {

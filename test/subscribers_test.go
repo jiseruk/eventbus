@@ -1,7 +1,10 @@
 package test
 
 import (
+	"bytes"
+	"errors"
 	"io/ioutil"
+	"net/http"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -22,19 +25,35 @@ func TestCreateSubscription(t *testing.T) {
 	router := server.GetRouter()
 	//For lambda creation
 	ioutil.WriteFile("/tmp/function.zip", []byte("data loca"), 0644)
-	topicServiceMock := &TopicServiceMock{}
 	mockDAO := &SubscriptionsDaoMock{}
-	service.TopicsService = topicServiceMock
 	service.SubscriptionsService = service.SubscriptionServiceImpl{Dao: mockDAO}
 
 	t.Run("It should create a subscriber to a topic", func(t *testing.T) {
+		topicServiceMock := &TopicServiceMock{}
+		service.TopicsService = topicServiceMock
 		mockLambda := &LambdaAPIMock{}
 		mockSNS := &SNSAPIMock{}
 		mockSQS := &SQSAPIMock{}
-		subscriber := &model.Subscriber{Endpoint: "http://subscriber/endp", Name: "subs", Topic: "topic",
-			ResourceID: "arn:subs", PullResourceID: "queue:subs", CreatedAt: model.Clock.Now()}
+
+		subscriber := &model.Subscriber{Endpoint: "http://subscriber/endp",
+			Name: "subs", Topic: "topic",
+			ResourceID:      "arn:subs",
+			DeadLetterQueue: "queue:subs",
+			CreatedAt:       model.Clock.Now(),
+		}
+
+		client.HTTPClient = NewTestClient(func(req *http.Request) (*http.Response, error) {
+			// Test request parameters
+			assert.Equal(t, req.URL.String(), "http://subscriber/endp")
+			return &http.Response{
+				StatusCode: 200,
+				Body:       ioutil.NopCloser(bytes.NewBufferString(`OK`)),
+			}, nil
+		})
+
 		lambdaArgs := getLambdaMock("http://subscriber/endp", "subs", "topic", "queue:subs")
 		client.EnginesMap["AWS"] = &client.AWSEngine{LambdaClient: mockLambda, SNSClient: mockSNS, SQSClient: mockSQS}
+
 		//Topic should exist
 		topicServiceMock.On("GetTopic", "topic").
 			Return(&model.Topic{ResourceID: "arn:topic", Name: "topic", Engine: "AWS"}, nil).Once()
@@ -63,6 +82,7 @@ func TestCreateSubscription(t *testing.T) {
 		assert.Equal(t, 201, rec.Code)
 		assert.JSONEq(t, `{"topic": "topic", "name":"subs", "endpoint":"http://subscriber/endp"}`,
 			rec.Body.String())
+
 		topicServiceMock.AssertExpectations(t)
 		mockDAO.AssertExpectations(t)
 		mockSNS.AssertExpectations(t)
@@ -75,7 +95,41 @@ func TestCreateSubscription(t *testing.T) {
 		assert.Equal(t, 400, rec.Code)
 	})
 
+	for _, rtFn := range []RoundTripFunc{
+		func(req *http.Request) (*http.Response, error) {
+			// Test request parameters
+			assert.Equal(t, req.URL.String(), "http://subscriber/endp")
+			return nil, errors.New("No response")
+		},
+		func(req *http.Request) (*http.Response, error) {
+			assert.Equal(t, req.URL.String(), "http://subscriber/endp")
+			return &http.Response{
+				StatusCode: 500,
+				Body:       ioutil.NopCloser(bytes.NewBufferString(`Error`)),
+			}, nil
+		},
+	} {
+		t.Run("it should fail creating the subscriber if the endpoint is down", func(t *testing.T) {
+			topicServiceMock := &TopicServiceMock{}
+			service.TopicsService = topicServiceMock
+			client.HTTPClient = NewTestClient(rtFn)
+			//Topic should exist
+			topicServiceMock.On("GetTopic", "topic").
+				Return(&model.Topic{ResourceID: "arn:topic", Name: "topic", Engine: "AWS"}, nil).Once()
+			//Subscriber with the provided name shold not exist in DB
+			mockDAO.On("GetSubscription", "subs").Return(nil, nil).Once()
+
+			rec := executeMockedRequest(router, "POST", "/subscribers", `{"topic": "topic", "name":"subs", "endpoint":"http://subscriber/endp"}`)
+			assert.Equal(t, 400, rec.Code)
+
+			topicServiceMock.AssertExpectations(t)
+		})
+	}
+
 	t.Run("it should fail creating the subscriber if the topic doesn't exist", func(t *testing.T) {
+		topicServiceMock := &TopicServiceMock{}
+		service.TopicsService = topicServiceMock
+
 		topicServiceMock.On("GetTopic", "topic").Return(nil, nil).Once()
 		rec := executeMockedRequest(router, "POST", "/subscribers", `{"topic": "topic", "name":"subs", "endpoint":"http://subscriber/endp"}`)
 
@@ -115,7 +169,7 @@ func TestConsumeDeadLetterQueueMessages(t *testing.T) {
 		mockSQS := &SQSAPIMock{}
 		mockDAO := &SubscriptionsDaoMock{}
 		subscriber := &model.Subscriber{Endpoint: "http://subscriber/endp", Name: "subs", Topic: "topic",
-			ResourceID: "arn:subs", PullResourceID: "queue:subs"}
+			ResourceID: "arn:subs", DeadLetterQueue: "queue:subs"}
 
 		topicServiceMock := &TopicServiceMock{}
 		service.TopicsService = topicServiceMock
@@ -151,7 +205,7 @@ func TestDeleteMessages(t *testing.T) {
 		mockSQS := &SQSAPIMock{}
 		mockDAO := &SubscriptionsDaoMock{}
 		subscriber := &model.Subscriber{Endpoint: "http://subscriber/endp", Name: "subs", Topic: "topic",
-			ResourceID: "arn:subs", PullResourceID: "queue:subs"}
+			ResourceID: "arn:subs", DeadLetterQueue: "queue:subs"}
 
 		topicServiceMock := &TopicServiceMock{}
 		service.TopicsService = topicServiceMock
