@@ -16,7 +16,8 @@ type SubscriptionService interface {
 }
 
 type SubscriptionServiceImpl struct {
-	Dao model.SubscriptionsDao
+	Dao        model.SubscriptionsDao
+	HTTPClient *http.Client
 }
 
 var SubscriptionsService SubscriptionService
@@ -33,8 +34,16 @@ func (s SubscriptionServiceImpl) CreateSubscription(name string, endpoint string
 	if err != nil {
 		return nil, app.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
 	}
+
 	if subscription != nil {
 		return nil, app.NewAPIError(http.StatusBadRequest, "database_error", fmt.Sprintf("Subscription with name %s already exists", name))
+	}
+
+	if ok, err := client.CheckEndpoint(endpoint); !ok || err != nil {
+		if err != nil {
+			return nil, app.NewAPIError(http.StatusBadRequest, "endpoint_error", fmt.Sprintf("The endpoint %s should return 2xx to a POST HTTP Call, but return error: %v", endpoint, err.Error()))
+		}
+		return nil, app.NewAPIError(http.StatusBadRequest, "endpoint_error", fmt.Sprintf("The endpoint %s should return 2xx to a POST HTTP Call", endpoint))
 	}
 
 	engine := client.GetEngineService(topicObj.Engine)
@@ -58,7 +67,7 @@ func (s SubscriptionServiceImpl) ConsumeMessages(subscriber string, maxCount int
 	}
 	topic, _ := TopicsService.GetTopic(subscriberObj.Topic)
 	engine := client.GetEngineService(topic.Engine)
-	messages, _ := engine.ReceiveMessages(subscriberObj.PullResourceID, maxCount)
+	messages, _ := engine.ReceiveMessages(subscriberObj.DeadLetterQueue, maxCount)
 
 	return &model.Messages{Messages: messages, Topic: topic.Name}, nil
 }
@@ -71,7 +80,7 @@ func (s SubscriptionServiceImpl) DeleteMessages(subscriber string, messages []mo
 	}
 	topic, _ := TopicsService.GetTopic(subscriberObj.Topic)
 	engine := client.GetEngineService(topic.Engine)
-	result, _ := engine.DeleteMessages(messages, subscriberObj.PullResourceID)
+	result, _ := engine.DeleteMessages(messages, subscriberObj.DeadLetterQueue)
 
 	return &model.Messages{Messages: result, Topic: topic.Name}, nil
 }

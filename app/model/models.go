@@ -6,12 +6,18 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+const (
+	SUBSCRIBER_PUSH     = "push"
+	SUBSCRIBER_PUSH_DLT = "push-dlq"
+	SUBSCRIBER_PULL     = "pull"
+)
+
 //Topic Model
 type Topic struct {
 	//gorm.Model
 	ID         uint      `gorm:"primary_key" json:"-"`
-	Name       string    `gorm:"not null;unique" json:"name" binding:"required"`
-	Engine     string    `json:"engine" binding:"required,oneof=AWSStream AWS"`
+	Name       string    `gorm:"not null;unique" json:"name" binding:"required" example:"topic_name"`
+	Engine     string    `json:"engine" binding:"required,oneof=AWSStream AWS" example:"AWS"`
 	ResourceID string    `json:"resource_id"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"-"`
@@ -19,14 +25,14 @@ type Topic struct {
 }
 
 type Subscriber struct {
-	ID             uint      `gorm:"primary_key" json:"-"`
-	Name           string    `gorm:"not null;unique" json:"name" binding:"required" example:"subscriber_name"`
-	ResourceID     string    `json:"-"`
-	Endpoint       string    `gorm:"not null;unique" json:"endpoint" binding:"required,url" example:"http://subscriber.wequeue.com/subscriber"`
-	Topic          string    `json:"topic" binding:"required" example:"topic_name"`
-	PullResourceID string    `json:"-"`
-	CreatedAt      time.Time `json:"-"`
-	UpdatedAt      time.Time `json:"-"`
+	ID              uint      `gorm:"primary_key" json:"-"`
+	Name            string    `gorm:"not null;unique" json:"name" binding:"required" example:"subscriber_name"`
+	ResourceID      string    `json:"-"`
+	Endpoint        string    `gorm:"not null;unique" json:"endpoint" binding:"required,url" example:"http://subscriber.wequeue.com/subscriber"`
+	Topic           string    `json:"topic" binding:"required" example:"topic_name"`
+	DeadLetterQueue string    `json:"-"`
+	CreatedAt       time.Time `json:"-"`
+	UpdatedAt       time.Time `json:"-"`
 }
 
 type Publisher struct {
