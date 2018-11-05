@@ -14,7 +14,7 @@ def handler(event, context):
     print("Received event: " + json.dumps(event, indent=2))
     print("Endpoint:" + endpoint)
     message = json.loads(event['Records'][0]['Sns']['Message'])
-    payload = {"message": message, "topic": topic}
+    payload = {"payload": message, "topic": topic}
     try:
         r = requests.post(endpoint, json=payload, headers={"Content-type": "application/json"})
         print("POST message result: ", r.status_code)

@@ -13,10 +13,12 @@ services:
       - '4576:4576'  
       - '4568:4568'  
       - '4574:4574'  
+      - '4569:4569'  
     environment:
-      SERVICES: lambda,sns,kinesis,sqs       
+      SERVICES: lambda,sns,kinesis,sqs,dynamodb       
       LAMBDA_EXECUTOR: local
       DOCKER_HOST: unix:///var/run/docker.sock
+      #DYNAMODB_BACKEND: http://localhost:4569
       DEBUG: 1
     volumes:
       - "/private${TMPDIR}/localstack:/tmp/localstack"
@@ -42,8 +44,6 @@ services:
       dockerfile: Dockerfile
     tty: true
     stdin_open: true
-    depends_on:
-      - 'mysql'
     links:
       - mysql:mysql
       - localstack:localstack    
@@ -53,3 +53,4 @@ services:
     environment:
       GO_ENVIRONMENT: local
       <<: *common-variables
+
