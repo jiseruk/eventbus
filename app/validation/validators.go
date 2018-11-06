@@ -1,5 +1,6 @@
 package validation
 
+/*
 import (
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
@@ -37,3 +38,4 @@ func TranslateOverride(validate *validator.Validate) {
 		return t
 	})
 }
+*/
