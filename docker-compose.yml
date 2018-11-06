@@ -57,3 +57,9 @@ services:
       GO_ENVIRONMENT: local
       <<: *common-variables
 
+  uat:
+    build:
+      context: integration_tests/
+      dockerfile: Dockerfile
+    depends_on:
+      - wequeue
