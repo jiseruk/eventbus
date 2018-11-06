@@ -74,8 +74,8 @@ type deleteError struct {
 }
 
 type ConsumerRequest struct {
-	MaxMessages int64  `form:"max_messages"`
-	Subscriber  string `form:"subscriber"`
+	MaxMessages int64  `form:"max_messages" binding:"required,max=10,min=1"`
+	Subscriber  string `form:"subscriber" binding:"required"`
 }
 
 type DeleteDeadLetterQueueMessagesRequest struct {
