@@ -3,6 +3,7 @@ package test
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -11,13 +12,15 @@ import (
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/wenance/wequeue-management_api/app/client"
 	"github.com/wenance/wequeue-management_api/app/model"
 	"github.com/wenance/wequeue-management_api/app/server"
-	"github.com/wenance/wequeue-management_api/app/service"
-	_ "github.com/wenance/wequeue-management_api/app/validation"
+	"github.com/wenance/wequeue-management_api/app/service" //_ "github.com/wenance/wequeue-management_api/app/validation"
+	"github.com/wenance/wequeue-management_api/app/validation"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 func TestCreateSubscription(t *testing.T) {
@@ -27,6 +30,7 @@ func TestCreateSubscription(t *testing.T) {
 	ioutil.WriteFile("/tmp/function.zip", []byte("data loca"), 0644)
 	mockDAO := &SubscriptionsDaoMock{}
 	service.SubscriptionsService = service.SubscriptionServiceImpl{Dao: mockDAO}
+	validation.TranslateOverride(binding.Validator.Engine().(*validator.Validate))
 
 	t.Run("It should create a subscriber to a topic", func(t *testing.T) {
 		topicServiceMock := &TopicServiceMock{}
@@ -41,10 +45,10 @@ func TestCreateSubscription(t *testing.T) {
 			DeadLetterQueue: "queue:subs",
 			CreatedAt:       model.Clock.Now(),
 		}
-
+		//The endpoint should be an active http endpoint
 		client.HTTPClient = NewTestClient(func(req *http.Request) (*http.Response, error) {
 			// Test request parameters
-			assert.Equal(t, req.URL.String(), "http://subscriber/endp")
+			assert.Equal(t, req.URL.String(), subscriber.Endpoint)
 			return &http.Response{
 				StatusCode: 200,
 				Body:       ioutil.NopCloser(bytes.NewBufferString(`OK`)),
@@ -158,6 +162,7 @@ func TestCreateSubscription(t *testing.T) {
 
 			res := executeMockedRequest(router, "POST", "/subscribers", r.body)
 			assert.Contains(t, res.Body.String(), `"code":"json_error"`)
+			fmt.Printf(res.Body.String())
 			assert.Equal(t, 400, res.Code, res.Body.String())
 		})
 	}
@@ -165,11 +170,12 @@ func TestCreateSubscription(t *testing.T) {
 
 func TestConsumeDeadLetterQueueMessages(t *testing.T) {
 	router := server.GetRouter()
+	subscriber := &model.Subscriber{Endpoint: "http://subscriber/endp", Name: "subs", Topic: "topic",
+		ResourceID: "arn:subs", DeadLetterQueue: "queue:subs"}
+
 	t.Run("It should get messages from dead letter queue", func(t *testing.T) {
 		mockSQS := &SQSAPIMock{}
 		mockDAO := &SubscriptionsDaoMock{}
-		subscriber := &model.Subscriber{Endpoint: "http://subscriber/endp", Name: "subs", Topic: "topic",
-			ResourceID: "arn:subs", DeadLetterQueue: "queue:subs"}
 
 		topicServiceMock := &TopicServiceMock{}
 		service.TopicsService = topicServiceMock
@@ -196,6 +202,34 @@ func TestConsumeDeadLetterQueueMessages(t *testing.T) {
 		mockDAO.AssertExpectations(t)
 		topicServiceMock.AssertExpectations(t)
 
+	})
+
+	t.Run("it should fail consuming dead letter queue messages if the subscriber doesn't exist", func(t *testing.T) {
+		mockDAO := &SubscriptionsDaoMock{}
+		service.SubscriptionsService = service.SubscriptionServiceImpl{Dao: mockDAO}
+		mockDAO.On("GetSubscription", "subs").
+			Return(nil, nil).Once()
+
+		res := executeMockedRequest(router, "GET", "/messages?subscriber=subs&max_messages=10", "")
+		assert.Equal(t, 404, res.Code)
+		assert.Equal(t, `{"message":"The subscriber subs doesn't exist","code":"database_error","status":404}`, res.Body.String())
+		mockDAO.AssertExpectations(t)
+	})
+
+	t.Run("it should fail consuming dead letter queue messages if the topic doesn't exist", func(t *testing.T) {
+		topicServiceMock := &TopicServiceMock{}
+		service.TopicsService = topicServiceMock
+		mockDAO := &SubscriptionsDaoMock{}
+		service.SubscriptionsService = service.SubscriptionServiceImpl{Dao: mockDAO}
+		mockDAO.On("GetSubscription", "subs").
+			Return(subscriber, nil).Once()
+		topicServiceMock.On("GetTopic", subscriber.Topic).Return(nil, nil).Once()
+
+		res := executeMockedRequest(router, "GET", "/messages?subscriber=subs&max_messages=10", "")
+		assert.Equal(t, 404, res.Code)
+		assert.Equal(t, `{"message":"The topic topic doesn't exist","code":"database_error","status":404}`, res.Body.String())
+		mockDAO.AssertExpectations(t)
+		topicServiceMock.AssertExpectations(t)
 	})
 }
 func TestDeleteMessages(t *testing.T) {

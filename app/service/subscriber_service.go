@@ -65,7 +65,18 @@ func (s SubscriptionServiceImpl) ConsumeMessages(subscriber string, maxCount int
 	if err != nil {
 		return nil, app.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
 	}
-	topic, _ := TopicsService.GetTopic(subscriberObj.Topic)
+	if subscriberObj == nil {
+		return nil, app.NewAPIError(http.StatusNotFound, "database_error", "The subscriber "+subscriber+" doesn't exist")
+	}
+
+	topic, apierr := TopicsService.GetTopic(subscriberObj.Topic)
+	if apierr != nil {
+		return nil, apierr
+	}
+	if topic == nil {
+		return nil, app.NewAPIError(http.StatusNotFound, "database_error", "The topic "+subscriberObj.Topic+" doesn't exist")
+	}
+
 	engine := client.GetEngineService(topic.Engine)
 	messages, _ := engine.ReceiveMessages(subscriberObj.DeadLetterQueue, maxCount)
 
