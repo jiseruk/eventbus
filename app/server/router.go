@@ -33,6 +33,10 @@ func GetRouter() *gin.Engine {
 		}
 
 		log.Printf("Message received: %v | %s", message.Payload, message.Topic)
+		if message.Payload != nil && message.Payload.(map[string]interface{})["fail"] == true {
+			c.JSON(http.StatusInternalServerError, &message)
+			return
+		}
 		c.JSON(http.StatusOK, &message)
 
 	})

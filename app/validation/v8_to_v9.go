@@ -18,7 +18,9 @@ var _ binding.StructValidator = &defaultValidator{}
 
 func init() {
 	fmt.Printf("Changing validator version to V9")
-	binding.Validator = new(defaultValidator)
+	validator := new(defaultValidator)
+	//translateOverride(validator.validate)
+	binding.Validator = validator
 
 }
 

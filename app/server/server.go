@@ -25,12 +25,12 @@ func Init() {
 	if err != nil {
 		log.Panic(err)
 	}
-	dynamo := model.GetClient()
+	//dynamo := model.GetClient()
 	service.TopicsService = service.TopicServiceImpl{Db: db}
-	//service.SubscriptionsService = service.SubscriptionServiceImpl{Dao: &model.SubscriberDaoImpl{Db: *db}}
-	service.SubscriptionsService = service.SubscriptionServiceImpl{
+	service.SubscriptionsService = service.SubscriptionServiceImpl{Dao: &model.SubscriberDaoImpl{Db: *db}}
+	/*service.SubscriptionsService = service.SubscriptionServiceImpl{
 		Dao: &model.SubscriberDaoDynamoImpl{DynamoClient: dynamo},
-	}
+	}*/
 	service.PublishersService = service.PublisherServiceImpl{}
 
 	r.Run(":8080")
