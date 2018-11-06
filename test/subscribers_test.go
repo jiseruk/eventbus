@@ -12,15 +12,13 @@ import (
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
-	"github.com/gin-gonic/gin/binding"
 	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/wenance/wequeue-management_api/app/client"
 	"github.com/wenance/wequeue-management_api/app/model"
 	"github.com/wenance/wequeue-management_api/app/server"
-	"github.com/wenance/wequeue-management_api/app/service" //_ "github.com/wenance/wequeue-management_api/app/validation"
-	"github.com/wenance/wequeue-management_api/app/validation"
-	"gopkg.in/go-playground/validator.v9"
+	"github.com/wenance/wequeue-management_api/app/service"
+	_ "github.com/wenance/wequeue-management_api/app/validation"
 )
 
 func TestCreateSubscription(t *testing.T) {
@@ -30,7 +28,6 @@ func TestCreateSubscription(t *testing.T) {
 	ioutil.WriteFile("/tmp/function.zip", []byte("data loca"), 0644)
 	mockDAO := &SubscriptionsDaoMock{}
 	service.SubscriptionsService = service.SubscriptionServiceImpl{Dao: mockDAO}
-	validation.TranslateOverride(binding.Validator.Engine().(*validator.Validate))
 
 	t.Run("It should create a subscriber to a topic", func(t *testing.T) {
 		topicServiceMock := &TopicServiceMock{}

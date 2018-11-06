@@ -20,11 +20,13 @@ func (s *SubscriberDaoDynamoImpl) CreateSubscription(name string, topic string, 
 	subscription := Subscriber{Name: name, Topic: topic, Endpoint: endpoint, ResourceID: resource, DeadLetterQueue: pullResource}
 	subscription.CreatedAt = Clock.Now()
 	subscription.UpdatedAt = Clock.Now()
+	fmt.Printf("SUBSCRIPTION: %#v", subscription)
 	item, err := dynamodbattribute.MarshalMap(subscription)
 	if err != nil {
 		return nil, err
 	}
 	//TODO: Manage errors
+	fmt.Printf("PUT ITEM: %#v", item)
 	_, err = s.DynamoClient.PutItem(&dynamodb.PutItemInput{
 		Item:      item,
 		TableName: &subscribersTable,
