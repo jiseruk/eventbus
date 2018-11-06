@@ -228,6 +228,21 @@ func TestConsumeDeadLetterQueueMessages(t *testing.T) {
 		mockDAO.AssertExpectations(t)
 		topicServiceMock.AssertExpectations(t)
 	})
+
+	for _, r := range []struct {
+		query string
+		err   string
+	}{
+		{query: `subscriber=&max_messages=`, err: "subscriber/max_messages is empty"},
+		{query: `subscriber=lala&max_messages=11`, err: "max_messages > 10"},
+		{query: `subscriber=lala&max_messages=0`, err: "max_messages < 1"},
+		{query: ``, err: "subscriber/max_messages are empty"},
+	} {
+		t.Run("It should fail getting messages from dead letter queue if query params are invalid ["+r.err+"]", func(t *testing.T) {
+			res := executeMockedRequest(router, "GET", "/messages?"+r.query, "")
+			assert.Equal(t, 400, res.Code)
+		})
+	}
 }
 func TestDeleteMessages(t *testing.T) {
 	router := server.GetRouter()
@@ -252,7 +267,9 @@ func TestDeleteMessages(t *testing.T) {
 			Entries: []*sqs.DeleteMessageBatchRequestEntry{
 				{Id: aws.String("1"), ReceiptHandle: aws.String("x")},
 			}, QueueUrl: aws.String("queue:subs")}).
-			Return(&sqs.DeleteMessageBatchOutput{Failed: make([]*sqs.BatchResultErrorEntry, 0)}, nil).Once()
+			Return(&sqs.DeleteMessageBatchOutput{
+				Failed: make([]*sqs.BatchResultErrorEntry, 0),
+			}, nil).Once()
 
 		res := executeMockedRequest(router, "DELETE", "/messages", `{"subscriber":"subs", "messages": [{"message_id":"1", "delete_token":"x"}]}`)
 		assert.Equal(t, 200, res.Code)
