@@ -2,7 +2,7 @@
 
 ## For starting the local environment:
 ```
-docker-compose --build
+docker-compose up --build
 ```
 ## API Documentation
 http://localhost:8080/swagger/index.html
