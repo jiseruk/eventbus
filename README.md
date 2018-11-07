@@ -1,6 +1,6 @@
 # wequeue-management_api
 
-This is the event bus of Wenance. it's made for transforming the sinchronized api calls between different microservices in an asynchronic, and event oriented comunnication.
+This is the event bus of Wenance. it's made for transforming the synchronized api calls between different microservices in an asynchronous, and event oriented comunnication.
 
 ## For starting the local environment:
 ```
