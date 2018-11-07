@@ -9,7 +9,7 @@ http://localhost:8080/swagger/index.html
 
 ## Create a topic
 ```
-curl -XPOST http://localhost:8080/topics {“name”:”topic_name”, “engine”:”AWS”}
+curl -XPOST http://localhost:8080/topics {"name":"topic_name", "engine":"AWS"}
 ```
 
 ## Create subscriber
