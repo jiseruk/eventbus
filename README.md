@@ -30,5 +30,5 @@ curl "localhost:8080/messages?max_messages=10&subscriber=test_subscriber"
 
 ## Delete failed messages from the dead-letter-queue
 ```
-curl -XDELETE "localhost:8080/messages? -d'{"subscriber":"test_subscriber", "messages": [{"message_id":"1", "delete_token":"x"}]}'
+curl -XDELETE localhost:8080/messages -d'{"subscriber":"test_subscriber", "messages": [{"message_id":"1", "delete_token":"x"}]}'
 ```
