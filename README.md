@@ -25,7 +25,7 @@ curl localhost:8080/messages -XPOST -d'{"topic":"test_topic", "payload":{"messag
 ```
 ## Consume Failed messages from the dead-letter-queue
 ```
-curl "localhost:8080/messages?max_messages=10&subscribe=test_subscriber"
+curl "localhost:8080/messages?max_messages=10&subscriber=test_subscriber"
 ```
 
 ## Delete failed messages from the dead-letter-queue
