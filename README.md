@@ -1,5 +1,7 @@
 # wequeue-management_api
 
+This is the event bus of Wenance. it's made for transforming the sinchronized api calls between different microservices in an asynchronic, and event oriented comunnication.
+
 ## For starting the local environment:
 ```
 docker-compose up --build
