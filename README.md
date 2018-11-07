@@ -7,7 +7,7 @@ docker-compose --build
 ## API Documentation
 http://localhost:8080/swagger/index.html
 
-## Create a topic:
+## Create a topic
 ```
 curl -XPOST http://localhost:8080/topics {“name”:”topic_name”, “engine”:”AWS”}
 ```
