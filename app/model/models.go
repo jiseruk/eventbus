@@ -7,9 +7,8 @@ import (
 )
 
 const (
-	SUBSCRIBER_PUSH     = "push"
-	SUBSCRIBER_PUSH_DLT = "push-dlq"
-	SUBSCRIBER_PULL     = "pull"
+	SUBSCRIBER_PUSH = "push"
+	SUBSCRIBER_PULL = "pull"
 )
 
 //Topic Model
@@ -28,11 +27,20 @@ type Subscriber struct {
 	ID              uint      `gorm:"primary_key" json:"-"`
 	Name            string    `gorm:"not null;unique" json:"name" binding:"required" example:"subscriber_name"`
 	ResourceID      string    `json:"-"`
-	Endpoint        string    `gorm:"not null;unique" json:"endpoint" binding:"required,url" example:"http://subscriber.wequeue.com/subscriber"`
+	Endpoint        *string   `gorm:"unique" json:"endpoint,omitempty" binding:"omitempty,url" example:"http://subscriber.wequeue.com/subscriber"`
 	Topic           string    `json:"topic" binding:"required" example:"topic_name"`
-	DeadLetterQueue string    `json:"-"`
+	Type            string    `json:"type" binding:"required,oneof=pull push"`
+	DeadLetterQueue string    `json:"dead_letter_queue,omitempty"`
+	PullingQueue    string    `json:"pulling_queue,omitempty"`
 	CreatedAt       time.Time `json:"-"`
 	UpdatedAt       time.Time `json:"-"`
+}
+
+func (s Subscriber) GetQueueURL() string {
+	if s.Type == SUBSCRIBER_PUSH {
+		return s.DeadLetterQueue
+	}
+	return s.PullingQueue
 }
 
 type Publisher struct {
@@ -51,9 +59,10 @@ type Engine struct {
 }
 
 type PublishMessage struct {
-	Topic     string      `json:"topic"`
-	Payload   interface{} `json:"payload" validate:"required"`
-	MessageID string      `json:"message_id"`
+	Topic          string      `json:"topic"`
+	Payload        interface{} `json:"payload" validate:"required"`
+	Timestamp      *int64      `json:"timestamp"`
+	SequenceNumber *string     `json:"sequence_number,omitempty"`
 }
 
 type Messages struct {

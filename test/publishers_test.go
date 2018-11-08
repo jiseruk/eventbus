@@ -28,8 +28,8 @@ func TestPublishMessage(t *testing.T) {
 	for _, payload := range []struct {
 		payload string
 	}{
-		{payload: `{"message":"hola"}`},
-		{payload: `["message",{"hola":"chau"}]`},
+		{payload: `[{"message":"hola"}]`},
+		{payload: `{"message":{"hola":"chau"}}`},
 	} {
 		t.Run("It should publish a message in a topic", func(t *testing.T) {
 			var topic = "topic"
@@ -37,12 +37,18 @@ func TestPublishMessage(t *testing.T) {
 			topicMock := getTopicMock(topic, "AWS", resource)
 
 			topicServiceMock.On("GetTopic", topic).Return(topicMock, nil).Once()
-			mockSNS.On("Publish", &sns.PublishInput{TopicArn: &resource, Message: &payload.payload}).Return(&sns.PublishOutput{MessageId: aws.String("1")}, nil)
+			mockSNS.On("Publish", &sns.PublishInput{TopicArn: &resource,
+				Message: aws.String(fmt.Sprintf(
+					`{"topic":"topic","payload":%s,"timestamp":%d}`,
+					payload.payload,
+					model.Clock.Now().UnixNano()),
+				),
+			}).Return(&sns.PublishOutput{MessageId: aws.String("1")}, nil)
 
 			rec := executeMockedRequest(router, "POST", "/messages", fmt.Sprintf(`{"topic": "topic", "payload":%v}`, payload.payload))
 
 			assert.JSONEq(t,
-				fmt.Sprintf(`{"message_id": "1", "payload": %s, "topic":"topic"}`, payload.payload),
+				fmt.Sprintf(`{"timestamp": %d, "payload": %s, "topic":"topic"}`, model.Clock.Now().UnixNano(), payload.payload),
 				rec.Body.String())
 			assert.Equal(t, 201, rec.Code)
 			mockSNS.AssertExpectations(t)

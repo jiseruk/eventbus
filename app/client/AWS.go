@@ -47,10 +47,10 @@ func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI, kinesisiface.KinesisA
 	if err != nil {
 		panic("FATAL: Connot connect to AWS")
 	}
-	snsClient := sns.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint(snsEndpoint))
+	snsClient := sns.New(sess, aws.NewConfig().WithEndpoint(snsEndpoint))
 	lambdaClient := lambda.New(sess, aws.NewConfig().WithEndpoint(lambdaEndpoint))
-	kinesisClient := kinesis.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint(kinesisEndpoint))
-	sqsClient := sqs.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint(sqsEndpoint))
+	kinesisClient := kinesis.New(sess, aws.NewConfig().WithEndpoint(kinesisEndpoint))
+	sqsClient := sqs.New(sess, aws.NewConfig().WithEndpoint(sqsEndpoint))
 	return snsClient, lambdaClient, kinesisClient, sqsClient
 }
 
@@ -76,20 +76,20 @@ func (azn AWSEngine) GetName() string {
 	return "AWS"
 }
 
-func (azn AWSEngine) Publish(topicResourceID string, message interface{}) (*PublishOutput, error) {
-	bytesMessage, _ := json.Marshal(message)
+func (azn AWSEngine) Publish(topicResourceID string, message *model.PublishMessage) (*model.PublishMessage, error) {
+	bytesMessage, _ := json.Marshal(&message)
 	strMessage := string(bytesMessage)
 	publishInput := &sns.PublishInput{Message: &strMessage, TopicArn: &topicResourceID}
-	output, err := azn.SNSClient.Publish(publishInput)
+	_, err := azn.SNSClient.Publish(publishInput)
 	if err != nil {
 		return nil, err
 	}
-	return &PublishOutput{MessageID: *output.MessageId}, nil
+	return message, nil
 }
 
 //CreateSubscriber creates a sns subscriber, that basically is a Lambda Function which receives the push notification and
 //makes the HTTP POST to the subscriber's endpoint
-func (azn AWSEngine) CreateSubscriber(topic model.Topic, subscriber string, endpoint string) (*SubscriberOutput, error) {
+func (azn AWSEngine) CreatePushSubscriber(topic model.Topic, subscriber string, endpoint string) (*SubscriberOutput, error) {
 	qoutput, err := azn.SQSClient.CreateQueue(&sqs.CreateQueueInput{QueueName: aws.String("dlq_lambda_" + subscriber)})
 	if err != nil {
 		return nil, err
@@ -117,7 +117,31 @@ func (azn AWSEngine) CreateSubscriber(topic model.Topic, subscriber string, endp
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating subscriber")
 	}
-	return &SubscriberOutput{SubscriptionID: *output.SubscriptionArn, PullResourceID: *qoutput.QueueUrl}, nil
+	return &SubscriberOutput{SubscriptionID: *output.SubscriptionArn, DeadLetterQueue: *qoutput.QueueUrl}, nil
+
+}
+
+func (azn AWSEngine) CreatePullSubscriber(topic model.Topic, subscriber string) (*SubscriberOutput, error) {
+	qoutput, err := azn.SQSClient.CreateQueue(&sqs.CreateQueueInput{QueueName: aws.String("pull_subscriber_" + subscriber)})
+	if err != nil {
+		return nil, err
+	}
+	qattrs, err := azn.SQSClient.GetQueueAttributes(
+		&sqs.GetQueueAttributesInput{QueueUrl: qoutput.QueueUrl, AttributeNames: []*string{aws.String("QueueArn")}})
+	if err != nil {
+		//TODO: Borrar Queue
+		return nil, err
+	}
+
+	output, err := azn.SNSClient.Subscribe(&sns.SubscribeInput{TopicArn: &topic.ResourceID,
+		Protocol: aws.String("sqs"),
+		Endpoint: qattrs.Attributes["QueueArn"]},
+	)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Error creating subscriber")
+	}
+	return &SubscriberOutput{SubscriptionID: *output.SubscriptionArn, PullingQueue: *qoutput.QueueUrl}, nil
 
 }
 

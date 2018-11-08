@@ -3,7 +3,6 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/kinesis"
@@ -34,7 +33,7 @@ func (azn *AWSStreamEngine) CreateTopic(name string) (*CreateTopicOutput, error)
 
 }
 
-func (azn AWSStreamEngine) CreateSubscriber(topic model.Topic, subscriber string, endpoint string) (*SubscriberOutput, error) {
+func (azn AWSStreamEngine) CreatePushSubscriber(topic model.Topic, subscriber string, endpoint string) (*SubscriberOutput, error) {
 	lambdaConf, err := createLambdaSubscriber(azn.LambdaClient, topic.Name, subscriber, endpoint,
 		"consumer.handler", "python2.7", "/tmp/function.zip", nil)
 	if err != nil {
@@ -47,14 +46,13 @@ func (azn AWSStreamEngine) CreateSubscriber(topic model.Topic, subscriber string
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating subscriber")
 	}
-	return &SubscriberOutput{SubscriptionID: *output.UUID, PullResourceID: topic.Name}, nil
+	return &SubscriberOutput{SubscriptionID: *output.UUID, DeadLetterQueue: topic.Name}, nil
 
 }
 
-func (azn AWSStreamEngine) Publish(topicResourceID string, message interface{}) (*PublishOutput, error) {
-	bytesMessage, _ := json.Marshal(message)
-	topic := strings.Split(topicResourceID, "/")[1]
-	publishInput := &kinesis.PutRecordInput{StreamName: &topic,
+func (azn AWSStreamEngine) Publish(topicResourceID string, message *model.PublishMessage) (*model.PublishMessage, error) {
+	bytesMessage, _ := json.Marshal(&message)
+	publishInput := &kinesis.PutRecordInput{StreamName: &message.Topic,
 		Data:         bytesMessage,
 		PartitionKey: aws.String("*"),
 	}
@@ -63,7 +61,8 @@ func (azn AWSStreamEngine) Publish(topicResourceID string, message interface{}) 
 	if err != nil {
 		return nil, err
 	}
-	return &PublishOutput{MessageID: *output.SequenceNumber}, nil
+	message.SequenceNumber = output.SequenceNumber
+	return message, nil
 }
 
 func (azn *AWSStreamEngine) DeleteTopic(resource string) error {
@@ -72,6 +71,8 @@ func (azn *AWSStreamEngine) DeleteTopic(resource string) error {
 }
 
 func (azn AWSStreamEngine) ReceiveMessages(resourceID string, maxMessages int64) ([]model.Message, error) {
+	//azn.KinesisClient.DescribeStream(&kinesis.DescribeStreamInput{StreamName: })
+
 	shards, err := azn.KinesisClient.GetShardIterator(&kinesis.GetShardIteratorInput{StreamName: &resourceID,
 		ShardId: aws.String("1")})
 
@@ -92,6 +93,10 @@ func (azn AWSStreamEngine) ReceiveMessages(resourceID string, maxMessages int64)
 
 func (azn AWSStreamEngine) DeleteMessages(messages []model.Message, queueUrl string) ([]model.Message, error) {
 	return nil, errors.New("You can't delete messages in this stream topic")
+}
+
+func (azn AWSStreamEngine) CreatePullSubscriber(topic model.Topic, subscriber string) (*SubscriberOutput, error) {
+	return nil, nil
 }
 
 func (azn AWSStreamEngine) GetName() string {

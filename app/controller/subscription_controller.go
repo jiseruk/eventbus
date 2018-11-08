@@ -30,7 +30,13 @@ func (t SubscriptionController) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, app.NewAPIError(http.StatusBadRequest, "json_error", err.Error()))
 		return
 	}
-	subscriber, err := service.SubscriptionsService.CreateSubscription(json.Name, json.Endpoint, json.Topic)
+	if json.Type == "push" && json.Endpoint == nil {
+		c.JSON(http.StatusBadRequest, app.NewAPIError(http.StatusBadRequest, "json_error", "The endpoint field is required for push subscribers"))
+	}
+	if json.Type == "pull" && json.Endpoint != nil {
+		c.JSON(http.StatusBadRequest, app.NewAPIError(http.StatusBadRequest, "json_error", "The endpoint field is invalid for pull subscribers"))
+	}
+	subscriber, err := service.SubscriptionsService.CreateSubscription(json.Name, json.Endpoint, json.Topic, json.Type)
 	if err != nil {
 		c.JSON(err.Status, err)
 		return

@@ -10,7 +10,7 @@ import (
 )
 
 type SubscriptionService interface {
-	CreateSubscription(name string, endpoint string, topic string) (*model.Subscriber, *app.APIError)
+	CreateSubscription(name string, endpoint *string, topic string, Type string) (*model.Subscriber, *app.APIError)
 	ConsumeMessages(subscriber string, maxCount int64) (*model.Messages, *app.APIError)
 	DeleteMessages(subscriber string, messages []model.Message) (*model.Messages, *app.APIError)
 }
@@ -22,7 +22,7 @@ type SubscriptionServiceImpl struct {
 
 var SubscriptionsService SubscriptionService
 
-func (s SubscriptionServiceImpl) CreateSubscription(name string, endpoint string, topic string) (*model.Subscriber, *app.APIError) {
+func (s SubscriptionServiceImpl) CreateSubscription(name string, endpoint *string, topic string, Type string) (*model.Subscriber, *app.APIError) {
 	topicObj, apierr := TopicsService.GetTopic(topic)
 	if apierr != nil {
 		return nil, apierr
@@ -41,18 +41,24 @@ func (s SubscriptionServiceImpl) CreateSubscription(name string, endpoint string
 
 	if ok, err := client.CheckEndpoint(endpoint); !ok || err != nil {
 		if err != nil {
-			return nil, app.NewAPIError(http.StatusBadRequest, "endpoint_error", fmt.Sprintf("The endpoint %s should return 2xx to a POST HTTP Call, but return error: %v", endpoint, err.Error()))
+			return nil, app.NewAPIError(http.StatusBadRequest, "endpoint_error", fmt.Sprintf("The endpoint %s should return 2xx to a POST HTTP Call, but return error: %v", *endpoint, err.Error()))
 		}
-		return nil, app.NewAPIError(http.StatusBadRequest, "endpoint_error", fmt.Sprintf("The endpoint %s should return 2xx to a POST HTTP Call", endpoint))
+		return nil, app.NewAPIError(http.StatusBadRequest, "endpoint_error", fmt.Sprintf("The endpoint %s should return 2xx to a POST HTTP Call", *endpoint))
 	}
 
 	engine := client.GetEngineService(topicObj.Engine)
-	output, err := engine.CreateSubscriber(*topicObj, name, endpoint)
+	var output *client.SubscriberOutput
+	if Type == "push" {
+		output, err = engine.CreatePushSubscriber(*topicObj, name, *endpoint)
+	} else {
+		output, err = engine.CreatePullSubscriber(*topicObj, name)
+
+	}
 	if err != nil {
 		return nil, app.NewAPIError(http.StatusInternalServerError, "engine_error", err.Error())
 	}
 
-	if subscription, err := s.Dao.CreateSubscription(name, topic, endpoint, output.SubscriptionID, output.PullResourceID); err != nil {
+	if subscription, err := s.Dao.CreateSubscription(name, topic, Type, output.SubscriptionID, endpoint, output.DeadLetterQueue, output.PullingQueue); err != nil {
 		return nil, app.NewAPIError(http.StatusInternalServerError, "database_create_subscriber_error", err.Error())
 	} else {
 		return subscription, nil
@@ -78,8 +84,9 @@ func (s SubscriptionServiceImpl) ConsumeMessages(subscriber string, maxCount int
 	}
 
 	engine := client.GetEngineService(topic.Engine)
-	messages, _ := engine.ReceiveMessages(subscriberObj.DeadLetterQueue, maxCount)
-
+	var messages []model.Message
+	fmt.Printf("subscriber %#v", subscriberObj)
+	messages, _ = engine.ReceiveMessages(subscriberObj.GetQueueURL(), maxCount)
 	return &model.Messages{Messages: messages, Topic: topic.Name}, nil
 }
 
@@ -91,7 +98,7 @@ func (s SubscriptionServiceImpl) DeleteMessages(subscriber string, messages []mo
 	}
 	topic, _ := TopicsService.GetTopic(subscriberObj.Topic)
 	engine := client.GetEngineService(topic.Engine)
-	result, _ := engine.DeleteMessages(messages, subscriberObj.DeadLetterQueue)
+	result, _ := engine.DeleteMessages(messages, subscriberObj.GetQueueURL())
 
 	return &model.Messages{Messages: result, Topic: topic.Name}, nil
 }

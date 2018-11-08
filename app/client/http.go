@@ -24,7 +24,10 @@ func init() {
 	}
 }
 
-func CheckEndpoint(url string) (bool, error) {
+func CheckEndpoint(url *string) (bool, error) {
+	if url == nil {
+		return true, nil
+	}
 	message := struct {
 		payload interface{}
 		topic   string
@@ -33,7 +36,7 @@ func CheckEndpoint(url string) (bool, error) {
 		topic:   "test_endpoint",
 	}
 	data, _ := json.Marshal(&message)
-	resp, err := HTTPClient.Post(url, "application/json", bytes.NewBuffer(data))
+	resp, err := HTTPClient.Post(*url, "application/json", bytes.NewBuffer(data))
 	if err != nil {
 		return false, err
 	}
