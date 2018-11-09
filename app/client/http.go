@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -35,7 +36,11 @@ func CheckEndpoint(url *string) (bool, error) {
 		payload: map[string]string{},
 		topic:   "test_endpoint",
 	}
-	data, _ := json.Marshal(&message)
+	data, err := json.Marshal(message)
+	fmt.Printf("HTTP BODY %s %#v", data, message)
+	if err != nil {
+		fmt.Printf("ERROR %s %#v", data, err)
+	}
 	resp, err := HTTPClient.Post(*url, "application/json", bytes.NewBuffer(data))
 	if err != nil {
 		return false, err

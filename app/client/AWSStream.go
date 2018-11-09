@@ -85,7 +85,12 @@ func (azn AWSStreamEngine) ReceiveMessages(resourceID string, maxMessages int64)
 	}
 	messages := make([]model.Message, len(output.Records))
 	for i, record := range output.Records {
-		messages[i] = model.Message{Payload: record.Data, MessageID: *record.SequenceNumber}
+		messages[i] = model.Message{
+			Message: model.PublishMessage{
+				Payload:        record.Data,
+				SequenceNumber: record.SequenceNumber,
+			},
+			MessageID: *record.SequenceNumber}
 	}
 
 	return messages, nil

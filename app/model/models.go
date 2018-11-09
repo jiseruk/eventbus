@@ -66,15 +66,14 @@ type PublishMessage struct {
 }
 
 type Messages struct {
-	Topic    string    `json:"topic"`
 	Messages []Message `json:"messages"`
 }
 
 type Message struct {
-	Payload     interface{}  `json:"payload"`
-	MessageID   string       `json:"message_id"`
-	DeleteToken *string      `json:"delete_token"`
-	DeleteError *deleteError `json:"delete_error,omitempty"`
+	Message     PublishMessage `json:"message"`
+	MessageID   string         `json:"message_id"`
+	DeleteToken *string        `json:"delete_token"`
+	DeleteError *deleteError   `json:"delete_error,omitempty"`
 }
 
 type deleteError struct {
@@ -94,5 +93,4 @@ type DeleteDeadLetterQueueMessagesRequest struct {
 
 type DeleteDeadLetterQueueMessagesResponse struct {
 	Failed []Message `json:"failed"`
-	Topic  string    `json:"topic"`
 }

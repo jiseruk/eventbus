@@ -87,7 +87,7 @@ func (s SubscriptionServiceImpl) ConsumeMessages(subscriber string, maxCount int
 	var messages []model.Message
 	fmt.Printf("subscriber %#v", subscriberObj)
 	messages, _ = engine.ReceiveMessages(subscriberObj.GetQueueURL(), maxCount)
-	return &model.Messages{Messages: messages, Topic: topic.Name}, nil
+	return &model.Messages{Messages: messages}, nil
 }
 
 func (s SubscriptionServiceImpl) DeleteMessages(subscriber string, messages []model.Message) (*model.Messages, *app.APIError) {
@@ -100,5 +100,5 @@ func (s SubscriptionServiceImpl) DeleteMessages(subscriber string, messages []mo
 	engine := client.GetEngineService(topic.Engine)
 	result, _ := engine.DeleteMessages(messages, subscriberObj.GetQueueURL())
 
-	return &model.Messages{Messages: result, Topic: topic.Name}, nil
+	return &model.Messages{Messages: result}, nil
 }

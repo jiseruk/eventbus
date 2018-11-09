@@ -93,5 +93,5 @@ func (t SubscriptionController) DeleteMessages(c *gin.Context) {
 		c.JSON(err.Status, err)
 		return
 	}
-	c.JSON(http.StatusOK, &model.DeleteDeadLetterQueueMessagesResponse{Failed: messages.Messages, Topic: messages.Topic})
+	c.JSON(http.StatusOK, &model.DeleteDeadLetterQueueMessagesResponse{Failed: messages.Messages})
 }

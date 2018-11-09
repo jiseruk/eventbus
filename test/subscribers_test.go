@@ -218,6 +218,7 @@ func TestCreateSubscription(t *testing.T) {
 
 func TestConsumeQueueMessages(t *testing.T) {
 	router := server.GetRouter()
+	model.Clock = clockwork.NewFakeClock()
 
 	for _, test := range []struct {
 		subscriber *model.Subscriber
@@ -254,13 +255,20 @@ func TestConsumeQueueMessages(t *testing.T) {
 				MaxNumberOfMessages: aws.Int64(10), QueueUrl: &test.queueURL}).
 				Return(&sqs.ReceiveMessageOutput{
 					Messages: []*sqs.Message{
-						{Body: aws.String(`{"msg":"lala"}`), MessageId: aws.String("1"), ReceiptHandle: aws.String("x")},
+						{Body: aws.String(fmt.Sprintf(`{"Message":{"payload":{"hola":"lala"},"timestamp":%d,"topic":"topic"},"MessageId":"1","Type":"Notification","TopicArn":"arn:topic"}`, model.Clock.Now().UnixNano())),
+							MessageId:     aws.String("1"),
+							ReceiptHandle: aws.String("x")},
 					},
 				}, nil).Once()
 
 			res := executeMockedRequest(router, "GET", "/messages?subscriber=subs&max_messages=10", "")
 			assert.Equal(t, 200, res.Code)
-			assert.Equal(t, `{"topic":"topic","messages":[{"payload":{"msg":"lala"},"message_id":"1","delete_token":"x"}]}`, res.Body.String())
+			assert.JSONEq(t,
+				fmt.Sprintf(`{"messages":[{"message":{"payload":{"hola":"lala"},"timestamp":%d,"topic":"topic"},
+					"message_id":"1","delete_token":"x"}]}`,
+					model.Clock.Now().UnixNano()),
+				res.Body.String())
+
 			mockSQS.AssertExpectations(t)
 			mockDAO.AssertExpectations(t)
 			topicServiceMock.AssertExpectations(t)
@@ -358,7 +366,7 @@ func TestDeleteMessages(t *testing.T) {
 
 			res := executeMockedRequest(router, "DELETE", "/messages", `{"subscriber":"subs", "messages": [{"message_id":"1", "delete_token":"x"}]}`)
 			assert.Equal(t, 200, res.Code)
-			assert.Equal(t, `{"failed":[],"topic":"topic"}`, res.Body.String())
+			assert.Equal(t, `{"failed":[]}`, res.Body.String())
 			mockSQS.AssertExpectations(t)
 			mockDAO.AssertExpectations(t)
 			topicServiceMock.AssertExpectations(t)

@@ -37,6 +37,13 @@ type DeadLetterQueueInput struct {
 	QueueName *string
 }
 
+type SNSNotification struct {
+	Message   model.PublishMessage `json:"Message"`
+	MessageId string               `json:"MessageId"`
+	TopicArn  string               `json:"TopicArn"`
+	Type      string               `json:"Type"`
+}
+
 func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI, kinesisiface.KinesisAPI, sqsiface.SQSAPI) {
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String("us-east-1"),
@@ -122,7 +129,10 @@ func (azn AWSEngine) CreatePushSubscriber(topic model.Topic, subscriber string, 
 }
 
 func (azn AWSEngine) CreatePullSubscriber(topic model.Topic, subscriber string) (*SubscriberOutput, error) {
-	qoutput, err := azn.SQSClient.CreateQueue(&sqs.CreateQueueInput{QueueName: aws.String("pull_subscriber_" + subscriber)})
+	qoutput, err := azn.SQSClient.CreateQueue(&sqs.CreateQueueInput{
+		QueueName: aws.String("pull_subscriber_" + subscriber),
+		//Attributes: map[string]*string{"VisibilityTimeout": aws.String("0")},
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -153,9 +163,21 @@ func (azn AWSEngine) ReceiveMessages(resourceID string, maxMessages int64) ([]mo
 
 	messages := make([]model.Message, len(output.Messages))
 	for i, msg := range output.Messages {
-		var payload interface{}
-		json.Unmarshal([]byte(*msg.Body), &payload)
-		messages[i] = model.Message{Payload: payload, MessageID: *msg.MessageId, DeleteToken: msg.ReceiptHandle}
+		var payload SNSNotification
+		err := json.Unmarshal([]byte(*msg.Body), &payload)
+		if err != nil {
+			fmt.Printf("ERROR: %#v", err)
+		}
+		//var publishedMessage model.PublishMessage
+		//err = json.Unmarshal([]byte(payload.Message), &publishedMessage)
+		if err != nil {
+			fmt.Printf("ERROR2: %#v", err)
+		}
+		messages[i] = model.Message{
+			Message:     payload.Message,
+			MessageID:   *msg.MessageId,
+			DeleteToken: msg.ReceiptHandle,
+		}
 	}
 	return messages, nil
 }
@@ -191,14 +213,9 @@ func createLambdaSubscriber(client lambdaiface.LambdaAPI, topic string, subscrib
 		createArgs.Environment.Variables["queue_name"] = deadLetterQueueInfo.QueueName
 	}
 
-	fmt.Printf("Function input: %#v", *createArgs)
-	if result, err := client.CreateFunction(createArgs); err != nil {
-		fmt.Println("Cannot create function: " + err.Error())
-		return nil, err
-	} else {
-		fmt.Println(result)
-		return result, nil
-	}
+	result, err := client.CreateFunction(createArgs)
+	return result, err
+
 }
 
 func (azn AWSEngine) DeleteMessages(messages []model.Message, queueUrl string) ([]model.Message, error) {
