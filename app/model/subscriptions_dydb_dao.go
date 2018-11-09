@@ -17,7 +17,7 @@ type SubscriberDaoDynamoImpl struct {
 
 func (s *SubscriberDaoDynamoImpl) CreateSubscription(name string, topic string, endpoint string,
 	resource string, pullResource string) (*Subscriber, error) {
-	subscription := Subscriber{Name: name, Topic: topic, Endpoint: endpoint, ResourceID: resource, DeadLetterQueue: pullResource}
+	subscription := Subscriber{Name: name, Topic: topic, Endpoint: &endpoint, ResourceID: resource, DeadLetterQueue: pullResource}
 	subscription.CreatedAt = Clock.Now()
 	subscription.UpdatedAt = Clock.Now()
 	fmt.Printf("SUBSCRIPTION: %#v", subscription)

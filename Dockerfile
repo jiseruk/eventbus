@@ -12,7 +12,7 @@ RUN chmod +x ./wait-for-it.sh
 RUN go get -u github.com/swaggo/swag/cmd/swag
 COPY . .
 RUN swag init
-RUN cd test && go test -v
+RUN cd test && go test -covermode=count -coverprofile=cover.out -coverpkg=../app/...
 #RUN bin/tests.sh
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main . 
 
