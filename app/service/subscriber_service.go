@@ -13,6 +13,7 @@ type SubscriptionService interface {
 	CreateSubscription(name string, endpoint *string, topic string, Type string) (*model.Subscriber, *app.APIError)
 	ConsumeMessages(subscriber string, maxCount int64) (*model.Messages, *app.APIError)
 	DeleteMessages(subscriber string, messages []model.Message) (*model.Messages, *app.APIError)
+	DeleteSubscription(name string) *app.APIError
 }
 
 type SubscriptionServiceImpl struct {
@@ -85,8 +86,11 @@ func (s SubscriptionServiceImpl) ConsumeMessages(subscriber string, maxCount int
 
 	engine := client.GetEngineService(topic.Engine)
 	var messages []model.Message
-	fmt.Printf("subscriber %#v", subscriberObj)
-	messages, _ = engine.ReceiveMessages(subscriberObj.GetQueueURL(), maxCount)
+
+	messages, err = engine.ReceiveMessages(subscriberObj.GetQueueURL(), maxCount)
+	if err != nil {
+		return nil, app.NewAPIError(http.StatusInternalServerError, "engine_error", err.Error())
+	}
 	return &model.Messages{Messages: messages}, nil
 }
 
@@ -101,4 +105,8 @@ func (s SubscriptionServiceImpl) DeleteMessages(subscriber string, messages []mo
 	result, _ := engine.DeleteMessages(messages, subscriberObj.GetQueueURL())
 
 	return &model.Messages{Messages: result}, nil
+}
+
+func (s SubscriptionServiceImpl) DeleteSubscription(name string) *app.APIError {
+	return nil
 }

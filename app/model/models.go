@@ -4,12 +4,15 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+	"github.com/jonboulle/clockwork"
 )
 
 const (
 	SUBSCRIBER_PUSH = "push"
 	SUBSCRIBER_PULL = "pull"
 )
+
+var Clock clockwork.Clock
 
 //Topic Model
 type Topic struct {
@@ -59,7 +62,7 @@ type Engine struct {
 }
 
 type PublishMessage struct {
-	Topic          string      `json:"topic"`
+	Topic          string      `json:"topic" binding:"required"`
 	Payload        interface{} `json:"payload" validate:"required"`
 	Timestamp      *int64      `json:"timestamp"`
 	SequenceNumber *string     `json:"sequence_number,omitempty"`

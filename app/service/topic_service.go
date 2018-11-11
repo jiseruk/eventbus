@@ -2,9 +2,9 @@ package service
 
 import (
 	"fmt"
-	"github.com/wenance/wequeue-management_api/app"
 	"net/http"
 
+	"github.com/wenance/wequeue-management_api/app"
 	"github.com/wenance/wequeue-management_api/app/client"
 	"github.com/wenance/wequeue-management_api/app/model"
 )
@@ -15,13 +15,13 @@ type TopicService interface {
 }
 
 type TopicServiceImpl struct {
-	Db model.TopicsDao
+	Dao model.TopicsDao
 }
 
 var TopicsService TopicService
 
 func (t TopicServiceImpl) CreateTopic(name string, engine client.EngineService) (*model.Topic, *app.APIError) {
-	topic, err := t.Db.GetTopic(name)
+	topic, err := t.Dao.GetTopic(name)
 	if err != nil {
 		return nil, app.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
 	}
@@ -31,10 +31,11 @@ func (t TopicServiceImpl) CreateTopic(name string, engine client.EngineService) 
 
 	output, err := engine.CreateTopic(name)
 	if err != nil {
-		return nil, &app.APIError{Status: http.StatusInternalServerError, Code: "engine_error", Message:err.Error()}
+		return nil, &app.APIError{Status: http.StatusInternalServerError, Code: "engine_error", Message: err.Error()}
 	}
-	if topic, err := t.Db.CreateTopic(name, engine.GetName(), output.Resource); err != nil {
+	if topic, err := t.Dao.CreateTopic(name, engine.GetName(), output.Resource); err != nil {
 		//TODO: Delete Topic in Engine
+
 		delErr := engine.DeleteTopic(output.Resource)
 		var multipleErrors string
 		if delErr != nil {
@@ -48,8 +49,8 @@ func (t TopicServiceImpl) CreateTopic(name string, engine client.EngineService) 
 	}
 }
 
-func (t TopicServiceImpl) GetTopic(name string)  (*model.Topic, *app.APIError){
-	topic, err := t.Db.GetTopic(name)
+func (t TopicServiceImpl) GetTopic(name string) (*model.Topic, *app.APIError) {
+	topic, err := t.Dao.GetTopic(name)
 	if err != nil {
 		return nil, app.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
 	}

@@ -32,9 +32,11 @@ func (t SubscriptionController) Create(c *gin.Context) {
 	}
 	if json.Type == "push" && json.Endpoint == nil {
 		c.JSON(http.StatusBadRequest, app.NewAPIError(http.StatusBadRequest, "json_error", "The endpoint field is required for push subscribers"))
+		return
 	}
 	if json.Type == "pull" && json.Endpoint != nil {
 		c.JSON(http.StatusBadRequest, app.NewAPIError(http.StatusBadRequest, "json_error", "The endpoint field is invalid for pull subscribers"))
+		return
 	}
 	subscriber, err := service.SubscriptionsService.CreateSubscription(json.Name, json.Endpoint, json.Topic, json.Type)
 	if err != nil {
@@ -45,6 +47,7 @@ func (t SubscriptionController) Create(c *gin.Context) {
 }
 
 // Consume godoc
+// @Name consume-messages
 // @Summary Consume pending messages
 // @Description consume pending messages from the subscriber's dead letter queue
 // @Tags subscribers

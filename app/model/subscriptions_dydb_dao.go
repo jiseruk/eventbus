@@ -1,8 +1,6 @@
 package model
 
 import (
-	"fmt"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
@@ -15,18 +13,21 @@ type SubscriberDaoDynamoImpl struct {
 	DynamoClient dynamodbiface.DynamoDBAPI
 }
 
-func (s *SubscriberDaoDynamoImpl) CreateSubscription(name string, topic string, endpoint string,
-	resource string, pullResource string) (*Subscriber, error) {
-	subscription := Subscriber{Name: name, Topic: topic, Endpoint: &endpoint, ResourceID: resource, DeadLetterQueue: pullResource}
+func (s *SubscriberDaoDynamoImpl) CreateSubscription(name string, topic string, Type string, resource string,
+	endpoint *string, deadLetterQueue string, pullingQueue string) (*Subscriber, error) {
+
+	subscription := Subscriber{Name: name, Topic: topic, Endpoint: endpoint,
+		ResourceID: resource, DeadLetterQueue: deadLetterQueue,
+		PullingQueue: pullingQueue, Type: Type,
+	}
 	subscription.CreatedAt = Clock.Now()
 	subscription.UpdatedAt = Clock.Now()
-	fmt.Printf("SUBSCRIPTION: %#v", subscription)
+
 	item, err := dynamodbattribute.MarshalMap(subscription)
 	if err != nil {
 		return nil, err
 	}
 	//TODO: Manage errors
-	fmt.Printf("PUT ITEM: %#v", item)
 	_, err = s.DynamoClient.PutItem(&dynamodb.PutItemInput{
 		Item:      item,
 		TableName: &subscribersTable,
@@ -50,8 +51,7 @@ func (s *SubscriberDaoDynamoImpl) GetSubscription(name string) (*Subscriber, err
 	if err != nil || output.Item == nil {
 		return nil, err
 	}
-	fmt.Printf("GET ITEM: %v", output)
-	//value := output.Item
+
 	var subscriber Subscriber
 	err = dynamodbattribute.UnmarshalMap(output.Item, &subscriber)
 	if err != nil {

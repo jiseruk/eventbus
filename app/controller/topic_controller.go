@@ -43,7 +43,7 @@ func (t TopicController) Create(c *gin.Context) {
 
 // Get godoc
 // @Summary Get a topic
-// @Description Get the topic description
+// @Description Get the topic information
 // @Tags topics
 // @Accept json
 // @Produce json
@@ -52,6 +52,7 @@ func (t TopicController) Create(c *gin.Context) {
 // @Failure 404 {object} app.APIError
 // @Failure 500 {object} app.APIError
 // @Router /topics/{topic} [get]
+// @OperationId get-topic
 func (t TopicController) Get(c *gin.Context) {
 	topicName := c.Param("topic")
 

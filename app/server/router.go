@@ -3,6 +3,7 @@ package server
 import (
 	"log"
 	"net/http"
+	"reflect"
 
 	"github.com/gin-gonic/gin"
 	"github.com/wenance/wequeue-management_api/app"
@@ -38,9 +39,12 @@ func GetRouter() *gin.Engine {
 			c.JSON(http.StatusBadRequest, app.NewAPIError(http.StatusBadRequest, "json_error", err.Error()))
 			return
 		}
+		log.Printf("Message received: %#v", message)
 
-		log.Printf("Message received: %v | %s", message.Payload, message.Topic)
-		if message.Payload != nil && message.Payload.(map[string]interface{})["fail"] == true {
+		payload := message.Payload.(map[string]interface{})
+		log.Printf("Message received, payload: %#v", payload)
+		log.Printf("Message received payload.payload: %#v", payload["payload"])
+		if payload != nil && reflect.DeepEqual(payload["payload"], map[string]interface{}{"fail": true}) {
 			c.JSON(http.StatusInternalServerError, &message)
 			return
 		}

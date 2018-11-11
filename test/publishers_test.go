@@ -1,6 +1,7 @@
 package test
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -68,6 +69,23 @@ func TestPublishMessage(t *testing.T) {
 
 	})
 
+	for _, body := range []string{
+		``,
+		`lala`,
+		`{}`,
+	} {
+		t.Run("It should fail publishing a message if the json is not valid", func(t *testing.T) {
+
+			rec := executeMockedRequest(router, "POST", "/messages", body)
+			assert.JSONEq(t,
+				`{"message": "The request body is not a valid json", "status": 400, "code": "json_error"}`,
+				rec.Body.String())
+			assert.Equal(t, 400, rec.Code)
+
+
+		})
+	}
+
 	t.Run("It should fail publishing a message if the topic doesn't exist", func(t *testing.T) {
 		topicServiceMock := &TopicServiceMock{}
 		service.TopicsService = topicServiceMock
@@ -82,6 +100,38 @@ func TestPublishMessage(t *testing.T) {
 			`{"message": "The topic topic doesn't exist", "status": 400, "code": "topic_not_exists"}`,
 			rec.Body.String())
 		assert.Equal(t, 400, rec.Code)
+		topicServiceMock.AssertExpectations(t)
+
+	})
+
+	t.Run("It should fail publishing a message if a sns.Publish() error happends", func(t *testing.T) {
+		mockSNS := &SNSAPIMock{}
+		//mockDAO := &PublishersDaoMock{}
+		topicServiceMock := &TopicServiceMock{}
+		router := server.GetRouter()
+		client.EnginesMap["AWS"] = &client.AWSEngine{SNSClient: mockSNS}
+		service.PublishersService = service.PublisherServiceImpl{}
+		service.TopicsService = topicServiceMock
+
+		topicMock := getTopicMock("topic", "AWS", "arn:topic")
+		var message = `{"message":"hola"}`
+
+		topicServiceMock.On("GetTopic", topicMock.Name).Return(topicMock, nil).Once()
+
+		mockSNS.On("Publish", &sns.PublishInput{TopicArn: &topicMock.ResourceID,
+			Message: aws.String(fmt.Sprintf(
+				`{"topic":"topic","payload":%s,"timestamp":%d}`,
+				message,
+				model.Clock.Now().UnixNano()),
+			),
+		}).Return(nil, errors.New("Publish error"))
+
+		rec := executeMockedRequest(router, "POST", "/messages", fmt.Sprintf(`{"topic": "topic", "payload":%v}`, message))
+
+		assert.JSONEq(t,
+			`{"message": "Publish error", "status": 500, "code": "engine_error"}`,
+			rec.Body.String())
+		assert.Equal(t, 500, rec.Code)
 		topicServiceMock.AssertExpectations(t)
 
 	})

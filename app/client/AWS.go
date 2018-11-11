@@ -38,10 +38,10 @@ type DeadLetterQueueInput struct {
 }
 
 type SNSNotification struct {
-	Message   model.PublishMessage `json:"Message"`
-	MessageId string               `json:"MessageId"`
-	TopicArn  string               `json:"TopicArn"`
-	Type      string               `json:"Type"`
+	Message   string `json:"Message"`
+	MessageId string `json:"MessageId"`
+	TopicArn  string `json:"TopicArn"`
+	Type      string `json:"Type"`
 }
 
 func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI, kinesisiface.KinesisAPI, sqsiface.SQSAPI) {
@@ -164,17 +164,21 @@ func (azn AWSEngine) ReceiveMessages(resourceID string, maxMessages int64) ([]mo
 	messages := make([]model.Message, len(output.Messages))
 	for i, msg := range output.Messages {
 		var payload SNSNotification
+		fmt.Printf("MSG %s", *msg.Body)
 		err := json.Unmarshal([]byte(*msg.Body), &payload)
 		if err != nil {
-			fmt.Printf("ERROR: %#v", err)
+			fmt.Printf("Error unmarshalling data %s", *msg.Body)
+			return nil, err
 		}
-		//var publishedMessage model.PublishMessage
-		//err = json.Unmarshal([]byte(payload.Message), &publishedMessage)
+		var publishedMessage model.PublishMessage
+		fmt.Printf("MSG PAYLOAD %s", payload.Message)
+		err = json.Unmarshal([]byte(payload.Message), &publishedMessage)
 		if err != nil {
-			fmt.Printf("ERROR2: %#v", err)
+			fmt.Printf("Error unmarshalling payload %s", payload.Message)
+			return nil, err
 		}
 		messages[i] = model.Message{
-			Message:     payload.Message,
+			Message:     publishedMessage,
 			MessageID:   *msg.MessageId,
 			DeleteToken: msg.ReceiptHandle,
 		}
@@ -237,6 +241,7 @@ func (azn AWSEngine) DeleteMessages(messages []model.Message, queueUrl string) (
 	return failedDeleteMessages, nil
 }
 
+/*
 func (azn AWSEngine) InvokeLambda(name string, payload string) (*lambda.InvokeOutput, error) {
 	output, err := azn.LambdaClient.Invoke(&lambda.InvokeInput{
 		Payload:      []byte(payload),
@@ -248,3 +253,4 @@ func (azn AWSEngine) InvokeLambda(name string, payload string) (*lambda.InvokeOu
 	fmt.Printf("%#v", output)
 	return output, nil
 }
+*/

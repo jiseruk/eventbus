@@ -31,7 +31,7 @@ func (PublisherServiceImpl) Publish(message model.PublishMessage) (*model.Publis
 	message.Timestamp = &timestamp
 	_, err := engine.Publish(topicObj.ResourceID, &message)
 	if err != nil {
-		return nil, app.NewAPIError(http.StatusInternalServerError, "publish_error", err.Error())
+		return nil, app.NewAPIError(http.StatusInternalServerError, "engine_error", err.Error())
 	}
 	return &message, nil
 }
