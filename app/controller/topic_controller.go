@@ -40,3 +40,30 @@ func (t TopicController) Create(c *gin.Context) {
 	}
 	c.JSON(http.StatusCreated, &topic)
 }
+
+// Get godoc
+// @Summary Get a topic
+// @Description Get the topic information
+// @Tags topics
+// @Accept json
+// @Produce json
+// @Param topic path string true "The name of the Topic"
+// @Success 200 {object} model.Topic
+// @Failure 404 {object} app.APIError
+// @Failure 500 {object} app.APIError
+// @Router /topics/{topic} [get]
+// @OperationId get-topic
+func (t TopicController) Get(c *gin.Context) {
+	topicName := c.Param("topic")
+
+	topic, apierr := service.TopicsService.GetTopic(topicName)
+	if apierr != nil {
+		c.JSON(apierr.Status, &apierr)
+		return
+	}
+	if topic == nil {
+		c.JSON(http.StatusNotFound, app.NewAPIError(http.StatusNotFound, "database_error", "The topic "+topicName+" doesn't exist"))
+	}
+
+	c.JSON(http.StatusOK, &topic)
+}

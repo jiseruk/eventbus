@@ -10,15 +10,17 @@ type PublishOutput struct {
 	MessageID string
 }
 type SubscriberOutput struct {
-	SubscriptionID string
-	PullResourceID string
+	SubscriptionID  string
+	DeadLetterQueue string
+	PullingQueue    string
 }
 
 type EngineService interface {
 	CreateTopic(name string) (*CreateTopicOutput, error)
 	DeleteTopic(resource string) error
-	Publish(topicResourceID string, message interface{}) (*PublishOutput, error)
-	CreateSubscriber(topic model.Topic, subscriber string, endpoint string) (*SubscriberOutput, error)
+	Publish(topicResourceID string, message *model.PublishMessage) (*model.PublishMessage, error)
+	CreatePushSubscriber(topic model.Topic, subscriber string, endpoint string) (*SubscriberOutput, error)
+	CreatePullSubscriber(topic model.Topic, subscriber string) (*SubscriberOutput, error)
 	ReceiveMessages(resourceID string, maxMessages int64) ([]model.Message, error)
 	DeleteMessages(messages []model.Message, queueUrl string) ([]model.Message, error)
 	GetName() string

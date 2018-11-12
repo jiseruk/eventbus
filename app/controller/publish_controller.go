@@ -37,11 +37,10 @@ func (t PublisherController) Publish(c *gin.Context) {
 		}
 	}
 
-	messageID, err := service.PublishersService.Publish(message.Topic, message.Payload)
+	messageOutput, err := service.PublishersService.Publish(message)
 	if err != nil {
 		c.JSON(err.Status, err)
 		return
 	}
-	message.MessageID = *messageID
-	c.JSON(http.StatusCreated, &message)
+	c.JSON(http.StatusCreated, &messageOutput)
 }

@@ -9,8 +9,11 @@ import (
 // @title WeQueue Management API
 // @version 0.1
 // @description This is the Wenance event-bus Management Api
-// @host localhost:8080
+// @host hhttp://localhost:8080
 // @BasePath /
+// @contact.name Javier Iseruk
+// @contact.url http://www.swagger.io/support
+// @contact.email javier.iseruk@wenance.com
 func main() {
 	server.Init()
 }

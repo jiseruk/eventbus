@@ -22,7 +22,27 @@ func GetClient() dynamodbiface.DynamoDBAPI {
 	dynamoClient := dynamodb.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint(dynamoEndpoint))
 	if *config.GetCurrentEnvironment() == config.LOCAL {
 		dynamoClient.CreateTable(&dynamodb.CreateTableInput{
-			TableName: aws.String("Subscribers"),
+			TableName: aws.String(subscribersTable),
+			AttributeDefinitions: []*dynamodb.AttributeDefinition{
+				{
+					AttributeName: aws.String("name"),
+					AttributeType: aws.String("S"),
+				},
+			},
+			KeySchema: []*dynamodb.KeySchemaElement{
+				{
+					AttributeName: aws.String("name"),
+					KeyType:       aws.String("HASH"),
+				},
+			},
+			ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
+				ReadCapacityUnits:  aws.Int64(5),
+				WriteCapacityUnits: aws.Int64(5),
+			},
+		})
+
+		dynamoClient.CreateTable(&dynamodb.CreateTableInput{
+			TableName: aws.String(topicsTable),
 			AttributeDefinitions: []*dynamodb.AttributeDefinition{
 				{
 					AttributeName: aws.String("name"),

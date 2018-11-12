@@ -30,7 +30,15 @@ func (t SubscriptionController) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, app.NewAPIError(http.StatusBadRequest, "json_error", err.Error()))
 		return
 	}
-	subscriber, err := service.SubscriptionsService.CreateSubscription(json.Name, json.Endpoint, json.Topic)
+	if json.Type == "push" && json.Endpoint == nil {
+		c.JSON(http.StatusBadRequest, app.NewAPIError(http.StatusBadRequest, "json_error", "The endpoint field is required for push subscribers"))
+		return
+	}
+	if json.Type == "pull" && json.Endpoint != nil {
+		c.JSON(http.StatusBadRequest, app.NewAPIError(http.StatusBadRequest, "json_error", "The endpoint field is invalid for pull subscribers"))
+		return
+	}
+	subscriber, err := service.SubscriptionsService.CreateSubscription(json.Name, json.Endpoint, json.Topic, json.Type)
 	if err != nil {
 		c.JSON(err.Status, err)
 		return
@@ -39,6 +47,7 @@ func (t SubscriptionController) Create(c *gin.Context) {
 }
 
 // Consume godoc
+// @Name consume-messages
 // @Summary Consume pending messages
 // @Description consume pending messages from the subscriber's dead letter queue
 // @Tags subscribers
@@ -87,5 +96,5 @@ func (t SubscriptionController) DeleteMessages(c *gin.Context) {
 		c.JSON(err.Status, err)
 		return
 	}
-	c.JSON(http.StatusOK, &model.DeleteDeadLetterQueueMessagesResponse{Failed: messages.Messages, Topic: messages.Topic})
+	c.JSON(http.StatusOK, &model.DeleteDeadLetterQueueMessagesResponse{Failed: messages.Messages})
 }

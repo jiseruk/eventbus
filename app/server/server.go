@@ -1,8 +1,7 @@
 package server
 
 import (
-	"log"
-
+	"github.com/jonboulle/clockwork"
 	"github.com/swaggo/gin-swagger"
 	"github.com/swaggo/gin-swagger/swaggerFiles"
 	"github.com/wenance/wequeue-management_api/app/client"
@@ -12,6 +11,8 @@ import (
 )
 
 func Init() {
+	model.Clock = clockwork.NewRealClock()
+
 	r := GetRouter()
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
@@ -21,16 +22,23 @@ func Init() {
 
 	client.EnginesMap["AWS"] = &client.AWSEngine{SNSClient: sns, LambdaClient: lambda, SQSClient: sqs}
 	client.EnginesMap["AWSStream"] = &client.AWSStreamEngine{LambdaClient: lambda, KinesisClient: kinesis}
-	db, err := model.NewDB()
+	/*db, err := model.NewDB()
 	if err != nil {
 		log.Panic(err)
-	}
-	//dynamo := model.GetClient()
-	service.TopicsService = service.TopicServiceImpl{Db: db}
-	service.SubscriptionsService = service.SubscriptionServiceImpl{Dao: &model.SubscriberDaoImpl{Db: *db}}
-	/*service.SubscriptionsService = service.SubscriptionServiceImpl{
-		Dao: &model.SubscriberDaoDynamoImpl{DynamoClient: dynamo},
 	}*/
+	dynamo := model.GetClient()
+	//service.TopicsService = service.TopicServiceImpl{Db: db}
+	service.TopicsService = service.TopicServiceImpl{
+		Dao: &model.TopicsDaoDynamoImpl{
+			DynamoClient: dynamo,
+		},
+	}
+	//service.SubscriptionsService = service.SubscriptionServiceImpl{Dao: &model.SubscriberDaoImpl{Db: *db}}
+	service.SubscriptionsService = service.SubscriptionServiceImpl{
+		Dao: &model.SubscriberDaoDynamoImpl{
+			DynamoClient: dynamo,
+		},
+	}
 	service.PublishersService = service.PublisherServiceImpl{}
 
 	r.Run(":8080")

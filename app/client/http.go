@@ -2,7 +2,6 @@ package client
 
 import (
 	"bytes"
-	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net"
@@ -24,16 +23,13 @@ func init() {
 	}
 }
 
-func CheckEndpoint(url string) (bool, error) {
-	message := struct {
-		payload interface{}
-		topic   string
-	}{
-		payload: map[string]string{},
-		topic:   "test_endpoint",
+func CheckEndpoint(url *string) (bool, error) {
+	if url == nil {
+		return true, nil
 	}
-	data, _ := json.Marshal(&message)
-	resp, err := HTTPClient.Post(url, "application/json", bytes.NewBuffer(data))
+	message := []byte(`{"payload":{}, "topic":"test_topic"}`)
+
+	resp, err := HTTPClient.Post(*url, "application/json", bytes.NewBuffer(message))
 	if err != nil {
 		return false, err
 	}

@@ -16,7 +16,7 @@ def handler(event, context):
     message = json.loads(event['Records'][0]['Sns']['Message'])
     payload = {"payload": message, "topic": topic}
     try:
-        r = requests.post(endpoint, json=payload, headers={"Content-type": "application/json"})
+        r = requests.post(endpoint, json=message, headers={"Content-type": "application/json"})
         print("POST message result: ", r.status_code)
         if r.status_code >= 400:
             raise Exception("Fail posting to " + endpoint + " Response: " + str(r.status_code) + "|" + r.content)
