@@ -1,0 +1,25 @@
+require 'rubygems'
+require 'cucumber'
+require 'cucumber/rake/task'
+
+Cucumber::Rake::Task.new(:features) do |t|
+  t.profile = 'default'
+end
+
+task :default => :features
+
+task :start_server do
+	puts "Deleting events suscriber/events.json"
+	system 'rm -rf suscriber/events.json'
+	puts "Creating events file"
+	out = `rackup suscriber/config.ru  -P #{Dir.pwd}/server.pid -D`
+	puts out
+end
+
+task :stop_server do
+	puts "stopping local server"
+	pidfile_path = "#{Dir.pwd}/server.pid"
+	pid = IO.read(pidfile_path)
+	system "kill -9 #{pid}"
+	system "rm -rf #{pidfile_path}"
+end

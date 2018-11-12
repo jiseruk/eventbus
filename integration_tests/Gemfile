@@ -1,0 +1,12 @@
+source 'https://rubygems.org'
+
+gem 'cucumber'
+gem 'http'
+gem "cuba"
+gem 'json'
+gem 'clipar'
+gem 'inrules'
+gem 'byebug'
+gem 'require_all'
+gem 'syntax'
+gem 'faker'

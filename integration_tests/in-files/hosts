@@ -1,0 +1,8 @@
+{
+	"hosts":{
+		"localhost":"http://localhost:8080",
+		"docker":"http://wequeue:8080",
+		"dev":"http://dev.eventbus.io",
+		"staging":"http://stg.eventbus.io",
+		"prod":"http://eventbus.io"}
+}
