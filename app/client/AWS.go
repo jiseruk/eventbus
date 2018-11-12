@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -128,10 +129,10 @@ func (azn AWSEngine) CreatePushSubscriber(topic model.Topic, subscriber string, 
 
 }
 
-func (azn AWSEngine) CreatePullSubscriber(topic model.Topic, subscriber string) (*SubscriberOutput, error) {
+func (azn AWSEngine) CreatePullSubscriber(topic model.Topic, subscriber string, visibilityTimeout int) (*SubscriberOutput, error) {
 	qoutput, err := azn.SQSClient.CreateQueue(&sqs.CreateQueueInput{
-		QueueName: aws.String("pull_subscriber_" + subscriber),
-		//Attributes: map[string]*string{"VisibilityTimeout": aws.String("0")},
+		QueueName:  aws.String("pull_subscriber_" + subscriber),
+		Attributes: map[string]*string{"VisibilityTimeout": aws.String(strconv.Itoa(visibilityTimeout))},
 	})
 	if err != nil {
 		return nil, err

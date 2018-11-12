@@ -4,7 +4,7 @@ import "github.com/jinzhu/gorm"
 
 type SubscriptionsDao interface {
 	CreateSubscription(name string, topic string, Type string, resource string,
-		endpoint *string, deadLetterQueue string, pullingQueue string) (*Subscriber, error)
+		endpoint *string, deadLetterQueue string, pullingQueue string, visibilityTimeout *int) (*Subscriber, error)
 	GetSubscription(name string) (*Subscriber, error)
 	GetSubscriptionByEndpoint(endpoint string) (*Subscriber, error)
 }
@@ -14,9 +14,9 @@ type SubscriberDaoImpl struct {
 }
 
 func (s *SubscriberDaoImpl) CreateSubscription(name string, topic string, Type string, resource string,
-	endpoint *string, deadLetterQueue string, pullingQueue string) (*Subscriber, error) {
+	endpoint *string, deadLetterQueue string, pullingQueue string, visibilityTimeout *int) (*Subscriber, error) {
 	subscription := Subscriber{Name: name, Topic: topic, Endpoint: endpoint, Type: Type,
-		ResourceID: resource, DeadLetterQueue: deadLetterQueue, PullingQueue: pullingQueue}
+		ResourceID: resource, DeadLetterQueue: deadLetterQueue, PullingQueue: pullingQueue, VisibilityTimeout: visibilityTimeout}
 	subscription.CreatedAt = Clock.Now()
 	subscription.UpdatedAt = Clock.Now()
 

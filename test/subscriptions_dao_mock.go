@@ -8,13 +8,13 @@ type SubscriptionsDaoMock struct {
 	mock.Mock
 }
 
-// CreateSubscription provides a mock function with given fields: name, topic, Type, resource, endpoint, deadLetterQueue, pullingQueue
-func (_m *SubscriptionsDaoMock) CreateSubscription(name string, topic string, Type string, resource string, endpoint *string, deadLetterQueue string, pullingQueue string) (*model.Subscriber, error) {
-	ret := _m.Called(name, topic, Type, resource, endpoint, deadLetterQueue, pullingQueue)
+// CreateSubscription provides a mock function with given fields: name, topic, Type, resource, endpoint, deadLetterQueue, pullingQueue, visibilityTimeout
+func (_m *SubscriptionsDaoMock) CreateSubscription(name string, topic string, Type string, resource string, endpoint *string, deadLetterQueue string, pullingQueue string, visibilityTimeout *int) (*model.Subscriber, error) {
+	ret := _m.Called(name, topic, Type, resource, endpoint, deadLetterQueue, pullingQueue, visibilityTimeout)
 
 	var r0 *model.Subscriber
-	if rf, ok := ret.Get(0).(func(string, string, string, string, string, string, string) *model.Subscriber); ok {
-		r0 = rf(name, topic, Type, resource, *endpoint, deadLetterQueue, pullingQueue)
+	if rf, ok := ret.Get(0).(func(string, string, string, string, *string, string, string, *int) *model.Subscriber); ok {
+		r0 = rf(name, topic, Type, resource, endpoint, deadLetterQueue, pullingQueue, visibilityTimeout)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*model.Subscriber)
@@ -22,8 +22,8 @@ func (_m *SubscriptionsDaoMock) CreateSubscription(name string, topic string, Ty
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, string, string, string, string, string) error); ok {
-		r1 = rf(name, topic, Type, resource, *endpoint, deadLetterQueue, pullingQueue)
+	if rf, ok := ret.Get(1).(func(string, string, string, string, *string, string, string, *int) error); ok {
+		r1 = rf(name, topic, Type, resource, endpoint, deadLetterQueue, pullingQueue, visibilityTimeout)
 	} else {
 		r1 = ret.Error(1)
 	}

@@ -27,16 +27,17 @@ type Topic struct {
 }
 
 type Subscriber struct {
-	ID              uint      `gorm:"primary_key" json:"-"`
-	Name            string    `gorm:"not null;unique" json:"name" binding:"required" example:"subscriber_name"`
-	ResourceID      string    `json:"-"`
-	Endpoint        *string   `gorm:"unique" json:"endpoint,omitempty" binding:"omitempty,url" example:"http://subscriber.wequeue.com/subscriber"`
-	Topic           string    `json:"topic" binding:"required" example:"topic_name"`
-	Type            string    `json:"type" binding:"required,oneof=pull push"`
-	DeadLetterQueue string    `json:"dead_letter_queue,omitempty"`
-	PullingQueue    string    `json:"pulling_queue,omitempty"`
-	CreatedAt       time.Time `json:"-"`
-	UpdatedAt       time.Time `json:"-"`
+	ID                uint      `gorm:"primary_key" json:"-"`
+	Name              string    `gorm:"not null;unique" json:"name" binding:"required" example:"subscriber_name"`
+	ResourceID        string    `json:"-"`
+	Endpoint          *string   `gorm:"unique" json:"endpoint,omitempty" binding:"omitempty,url" example:"http://subscriber.wequeue.com/subscriber"`
+	Topic             string    `json:"topic" binding:"required" example:"topic_name"`
+	Type              string    `json:"type" binding:"required,oneof=pull push"`
+	DeadLetterQueue   string    `json:"dead_letter_queue,omitempty"`
+	PullingQueue      string    `json:"pulling_queue,omitempty"`
+	VisibilityTimeout *int      `json:"visibility_timeout,omitempty,min(0),max(43200)"`
+	CreatedAt         time.Time `json:"-"`
+	UpdatedAt         time.Time `json:"-"`
 }
 
 func (s Subscriber) GetQueueURL() string {

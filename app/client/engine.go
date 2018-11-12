@@ -20,7 +20,7 @@ type EngineService interface {
 	DeleteTopic(resource string) error
 	Publish(topicResourceID string, message *model.PublishMessage) (*model.PublishMessage, error)
 	CreatePushSubscriber(topic model.Topic, subscriber string, endpoint string) (*SubscriberOutput, error)
-	CreatePullSubscriber(topic model.Topic, subscriber string) (*SubscriberOutput, error)
+	CreatePullSubscriber(topic model.Topic, subscriber string, visibilityTimeout int) (*SubscriberOutput, error)
 	ReceiveMessages(resourceID string, maxMessages int64) ([]model.Message, error)
 	DeleteMessages(messages []model.Message, queueUrl string) ([]model.Message, error)
 	GetName() string

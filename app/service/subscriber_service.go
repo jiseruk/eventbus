@@ -10,7 +10,7 @@ import (
 )
 
 type SubscriptionService interface {
-	CreateSubscription(name string, endpoint *string, topic string, Type string) (*model.Subscriber, *app.APIError)
+	CreateSubscription(name string, endpoint *string, topic string, Type string, visibilityTimeout *int) (*model.Subscriber, *app.APIError)
 	ConsumeMessages(subscriber string, maxCount int64) (*model.Messages, *app.APIError)
 	DeleteMessages(subscriber string, messages []model.Message) (*model.Messages, *app.APIError)
 	DeleteSubscription(name string) *app.APIError
@@ -23,7 +23,7 @@ type SubscriptionServiceImpl struct {
 
 var SubscriptionsService SubscriptionService
 
-func (s SubscriptionServiceImpl) CreateSubscription(name string, endpoint *string, topic string, Type string) (*model.Subscriber, *app.APIError) {
+func (s SubscriptionServiceImpl) CreateSubscription(name string, endpoint *string, topic string, Type string, visibilityTimeout *int) (*model.Subscriber, *app.APIError) {
 	topicObj, apierr := TopicsService.GetTopic(topic)
 	if apierr != nil {
 		return nil, apierr
@@ -49,17 +49,19 @@ func (s SubscriptionServiceImpl) CreateSubscription(name string, endpoint *strin
 
 	engine := client.GetEngineService(topicObj.Engine)
 	var output *client.SubscriberOutput
-	if Type == "push" {
+	if Type == model.SUBSCRIBER_PUSH {
 		output, err = engine.CreatePushSubscriber(*topicObj, name, *endpoint)
 	} else {
-		output, err = engine.CreatePullSubscriber(*topicObj, name)
+		output, err = engine.CreatePullSubscriber(*topicObj, name, *visibilityTimeout)
 
 	}
 	if err != nil {
+		defer s.DeleteSubscription(name)
 		return nil, app.NewAPIError(http.StatusInternalServerError, "engine_error", err.Error())
 	}
 
-	if subscription, err := s.Dao.CreateSubscription(name, topic, Type, output.SubscriptionID, endpoint, output.DeadLetterQueue, output.PullingQueue); err != nil {
+	if subscription, err := s.Dao.CreateSubscription(name, topic, Type, output.SubscriptionID, endpoint,
+		output.DeadLetterQueue, output.PullingQueue, visibilityTimeout); err != nil {
 		return nil, app.NewAPIError(http.StatusInternalServerError, "database_create_subscriber_error", err.Error())
 	} else {
 		return subscription, nil

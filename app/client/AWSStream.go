@@ -100,7 +100,7 @@ func (azn AWSStreamEngine) DeleteMessages(messages []model.Message, queueUrl str
 	return nil, errors.New("You can't delete messages in this stream topic")
 }
 
-func (azn AWSStreamEngine) CreatePullSubscriber(topic model.Topic, subscriber string) (*SubscriberOutput, error) {
+func (azn AWSStreamEngine) CreatePullSubscriber(topic model.Topic, subscriber string, visibilityTimeout int) (*SubscriberOutput, error) {
 	return nil, nil
 }
 
