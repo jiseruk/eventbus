@@ -34,7 +34,6 @@ services:
       <<: *common-variables
   
   subscriber:
-    # image: subscriber:latest
     build:
       context: integration_tests/suscriber/
       dockerfile: Dockerfile
@@ -63,3 +62,7 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - wequeue
+      - localstack
+      - mysql
+    environment:
+      ENVIRONMENT: docker
