@@ -33,13 +33,6 @@ services:
       MYSQL_ROOT_PASSWORD: root
       <<: *common-variables
   
-  subscriber:
-    build:
-      context: integration_tests/suscriber/
-      dockerfile: Dockerfile
-    ports:
-      - '9292:9292'
-
   wequeue:
     build:
       context: .
@@ -57,14 +50,3 @@ services:
       RUN_TESTS: 
       <<: *common-variables
 
-  uat:
-    build:
-      context: integration_tests/
-      dockerfile: Dockerfile
-    depends_on:
-      - wequeue
-      - localstack
-      - mysql
-      - subscriber
-    environment:
-      ENVIRONMENT: docker
