@@ -6,6 +6,12 @@ This is the event bus of Wenance. it's made for transforming the synchronized ap
 ```
 docker-compose -p wequeue up --build
 ```
+
+##For running integration tests:
+```
+docker-compose -p wequeue -f docker-compose-integration.yml up --build
+```
+
 ## API Documentation
 http://localhost:8080/swagger/index.html
 
@@ -25,7 +31,7 @@ curl localhost:8080/subscribers -XPOST -d'{"name":"test_subscriber", "topic":"te
 
 ## Create a pull subscriber
 ```
-curl localhost:8080/subscribers -XPOST -d'{"name":"test_subscriber", "topic":"test_topic", "endpoint":"http://wequeue:8080/test_subscriber", "type":"pull"}' -H'content-type: application/json'
+curl localhost:8080/subscribers -XPOST -d'{"name":"test_subscriber", "topic":"test_topic", "visibility_timeout":30, "type":"pull"}' -H'content-type: application/json'
 ```
 
 ## Publish a message
