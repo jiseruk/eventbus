@@ -8,6 +8,7 @@ engines:
     lambda:
       endpoint: http://localstack:4574 
       executionRole: "arn:role:dummy"
+      zipDir: /go/src/github.com/wenance/wequeue-management_api/lambda/
     sqs:
       endpoint: http://localstack:4576
     dynamodb:

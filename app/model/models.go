@@ -1,10 +1,14 @@
 package model
 
 import (
+	err "errors"
 	"time"
 
+	"github.com/go-ozzo/ozzo-validation"
+	"github.com/go-ozzo/ozzo-validation/is"
 	"github.com/jinzhu/gorm"
 	"github.com/jonboulle/clockwork"
+	"github.com/wenance/wequeue-management_api/app/errors"
 )
 
 const (
@@ -18,25 +22,63 @@ var Clock clockwork.Clock
 type Topic struct {
 	//gorm.Model
 	ID         uint      `gorm:"primary_key" json:"-"`
-	Name       string    `gorm:"not null;unique" json:"name" binding:"required" example:"topic_name"`
-	Engine     string    `json:"engine" binding:"required,oneof=AWSStream AWS" example:"AWS"`
+	Name       string    `gorm:"not null;unique" json:"name" example:"topic_name"`
+	Engine     string    `json:"engine" example:"AWS"`
 	ResourceID string    `json:"resource_id"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"-"`
 	//DeletedAt *time.Time `sql:"index"`
 }
 
+func (t Topic) Validate() error {
+	return validation.ValidateStruct(
+		&t,
+		validation.Field(&t.Name, validation.Required.Error(errors.ErrorFieldRequired)),
+		validation.Field(&t.Engine, validation.Required.Error(errors.ErrorFieldRequired),
+			validation.In("AWS", "AWSStream").Error(errors.GetInListError("AWS", "AWSStream"))),
+	)
+}
+
 type Subscriber struct {
-	ID              uint      `gorm:"primary_key" json:"-"`
-	Name            string    `gorm:"not null;unique" json:"name" binding:"required" example:"subscriber_name"`
-	ResourceID      string    `json:"-"`
-	Endpoint        *string   `gorm:"unique" json:"endpoint,omitempty" binding:"omitempty,url" example:"http://subscriber.wequeue.com/subscriber"`
-	Topic           string    `json:"topic" binding:"required" example:"topic_name"`
-	Type            string    `json:"type" binding:"required,oneof=pull push"`
-	DeadLetterQueue string    `json:"dead_letter_queue,omitempty"`
-	PullingQueue    string    `json:"pulling_queue,omitempty"`
-	CreatedAt       time.Time `json:"-"`
-	UpdatedAt       time.Time `json:"-"`
+	ID                uint      `gorm:"primary_key" json:"-"`
+	Name              string    `gorm:"not null;unique" json:"name" example:"subscriber_name"`
+	ResourceID        string    `json:"-"`
+	Endpoint          *string   `gorm:"unique" json:"endpoint,omitempty" example:"http://subscriber.wequeue.com/subscriber"`
+	Topic             string    `json:"topic" example:"topic_name"`
+	Type              string    `json:"type"`
+	DeadLetterQueue   string    `json:"dead_letter_queue,omitempty"`
+	PullingQueue      string    `json:"pulling_queue,omitempty"`
+	VisibilityTimeout *int      `json:"visibility_timeout,omitempty"`
+	CreatedAt         time.Time `json:"-"`
+	UpdatedAt         time.Time `json:"-"`
+}
+
+func (s Subscriber) Validate() error {
+	rules := []*validation.FieldRules{
+		validation.Field(&s.Name, validation.Required.Error(errors.ErrorFieldRequired)),
+		validation.Field(&s.Topic, validation.Required.Error(errors.ErrorFieldRequired)),
+	}
+	typeRule := validation.Field(&s.Type,
+		validation.Required.Error(errors.ErrorFieldRequired),
+		validation.In(SUBSCRIBER_PULL, SUBSCRIBER_PUSH).Error(errors.GetInListError(SUBSCRIBER_PULL, SUBSCRIBER_PUSH)),
+	)
+	if err := validation.ValidateStruct(&s, typeRule); err == nil {
+		if s.Type == SUBSCRIBER_PULL {
+			rules = append(rules, validation.Field(&s.VisibilityTimeout,
+				validation.Required.Error(errors.ErrorFieldRequired),
+				validation.Min(0),
+				validation.Max(43200),
+			))
+		} else {
+			rules = append(rules, validation.Field(&s.Endpoint,
+				validation.Required.Error(errors.ErrorFieldRequired),
+				is.URL,
+			))
+		}
+	}
+	rules = append(rules, typeRule)
+
+	return validation.ValidateStruct(&s, rules...)
 }
 
 func (s Subscriber) GetQueueURL() string {
@@ -62,10 +104,29 @@ type Engine struct {
 }
 
 type PublishMessage struct {
-	Topic          string      `json:"topic" binding:"required"`
-	Payload        interface{} `json:"payload" validate:"required"`
+	Topic          string      `json:"topic"`
+	Payload        interface{} `json:"payload"`
 	Timestamp      *int64      `json:"timestamp"`
 	SequenceNumber *string     `json:"sequence_number,omitempty"`
+}
+
+func (p PublishMessage) Validate() error {
+	return validation.ValidateStruct(
+		&p,
+		validation.Field(&p.Topic,
+			validation.Required.Error(errors.ErrorFieldRequired)),
+		validation.Field(&p.Payload,
+			validation.Required.Error(errors.ErrorFieldRequired),
+			validation.By(func(obj interface{}) error {
+
+				if _, ok := obj.(map[string]interface{}); !ok {
+					if _, ok := obj.([]interface{}); !ok {
+						return err.New("it should be a valid json object")
+					}
+				}
+				return nil
+			})),
+	)
 }
 
 type Messages struct {

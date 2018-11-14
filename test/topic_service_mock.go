@@ -1,6 +1,6 @@
 package test
 
-import app "github.com/wenance/wequeue-management_api/app"
+import errors "github.com/wenance/wequeue-management_api/app/errors"
 import client "github.com/wenance/wequeue-management_api/app/client"
 import mock "github.com/stretchr/testify/mock"
 import model "github.com/wenance/wequeue-management_api/app/model"
@@ -11,7 +11,7 @@ type TopicServiceMock struct {
 }
 
 // CreateTopic provides a mock function with given fields: name, engine
-func (_m *TopicServiceMock) CreateTopic(name string, engine client.EngineService) (*model.Topic, *app.APIError) {
+func (_m *TopicServiceMock) CreateTopic(name string, engine client.EngineService) (*model.Topic, *errors.APIError) {
 	ret := _m.Called(name, engine)
 
 	var r0 *model.Topic
@@ -23,12 +23,12 @@ func (_m *TopicServiceMock) CreateTopic(name string, engine client.EngineService
 		}
 	}
 
-	var r1 *app.APIError
-	if rf, ok := ret.Get(1).(func(string, client.EngineService) *app.APIError); ok {
+	var r1 *errors.APIError
+	if rf, ok := ret.Get(1).(func(string, client.EngineService) *errors.APIError); ok {
 		r1 = rf(name, engine)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*app.APIError)
+			r1 = ret.Get(1).(*errors.APIError)
 		}
 	}
 
@@ -36,7 +36,7 @@ func (_m *TopicServiceMock) CreateTopic(name string, engine client.EngineService
 }
 
 // GetTopic provides a mock function with given fields: name
-func (_m *TopicServiceMock) GetTopic(name string) (*model.Topic, *app.APIError) {
+func (_m *TopicServiceMock) GetTopic(name string) (*model.Topic, *errors.APIError) {
 	ret := _m.Called(name)
 
 	var r0 *model.Topic
@@ -48,12 +48,12 @@ func (_m *TopicServiceMock) GetTopic(name string) (*model.Topic, *app.APIError) 
 		}
 	}
 
-	var r1 *app.APIError
-	if rf, ok := ret.Get(1).(func(string) *app.APIError); ok {
+	var r1 *errors.APIError
+	if rf, ok := ret.Get(1).(func(string) *errors.APIError); ok {
 		r1 = rf(name)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*app.APIError)
+			r1 = ret.Get(1).(*errors.APIError)
 		}
 	}
 

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -26,6 +27,24 @@ var lambdaEndpoint = config.Get("engines.AWS.lambda.endpoint")
 var kinesisEndpoint = config.Get("engines.AWS.kinesis.endpoint")
 var sqsEndpoint = config.Get("engines.AWS.sqs.endpoint")
 
+type PolicyDocument struct {
+	Version   string
+	Id        string
+	Statement []StatementEntry
+}
+type Condition struct {
+	ArnLike map[string]string
+}
+
+type StatementEntry struct {
+	Sid       string
+	Effect    string
+	Action    []string
+	Resource  string
+	Principal map[string]string
+	Condition Condition
+}
+
 type AWSEngine struct {
 	SNSClient    snsiface.SNSAPI
 	LambdaClient lambdaiface.LambdaAPI
@@ -45,15 +64,15 @@ type SNSNotification struct {
 }
 
 func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI, kinesisiface.KinesisAPI, sqsiface.SQSAPI) {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-east-1"),
-		//Credentials: credentials.NewSharedCredentials("", "default"),
-		Credentials: config.GetObject("aws_credentials").(*credentials.Credentials),
-		//Endpoint:    aws.String(SNSEndpoint),
-	})
-	if err != nil {
-		panic("FATAL: Connot connect to AWS")
-	}
+	sess := session.Must(
+		session.NewSession(&aws.Config{
+			Region: aws.String("us-east-1"),
+			//Credentials: credentials.NewSharedCredentials("", "default"),
+			Credentials: config.GetObject("aws_credentials").(*credentials.Credentials),
+			//Endpoint:    aws.String(SNSEndpoint),
+		}),
+	)
+
 	snsClient := sns.New(sess, aws.NewConfig().WithEndpoint(snsEndpoint))
 	lambdaClient := lambda.New(sess, aws.NewConfig().WithEndpoint(lambdaEndpoint))
 	kinesisClient := kinesis.New(sess, aws.NewConfig().WithEndpoint(kinesisEndpoint))
@@ -118,20 +137,35 @@ func (azn AWSEngine) CreatePushSubscriber(topic model.Topic, subscriber string, 
 
 	output, err := azn.SNSClient.Subscribe(&sns.SubscribeInput{TopicArn: &topic.ResourceID,
 		Protocol: aws.String("lambda"),
-		Endpoint: lambdaConf.FunctionArn},
-	)
+		Endpoint: lambdaConf.FunctionArn,
+	})
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating subscriber")
 	}
+
+	_, err = azn.LambdaClient.AddPermission(&lambda.AddPermissionInput{
+		Action:       aws.String("lambda:InvokeFunction"),
+		FunctionName: aws.String("lambda_subscriber_" + subscriber),
+		Principal:    aws.String("sns.amazonaws.com"),
+		SourceArn:    &topic.ResourceID,
+		StatementId:  aws.String("lambda_subscriber_" + subscriber),
+	})
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Error creating subscriber's policy")
+	}
+
 	return &SubscriberOutput{SubscriptionID: *output.SubscriptionArn, DeadLetterQueue: *qoutput.QueueUrl}, nil
 
 }
 
-func (azn AWSEngine) CreatePullSubscriber(topic model.Topic, subscriber string) (*SubscriberOutput, error) {
+func (azn AWSEngine) CreatePullSubscriber(topic model.Topic, subscriber string, visibilityTimeout int) (*SubscriberOutput, error) {
 	qoutput, err := azn.SQSClient.CreateQueue(&sqs.CreateQueueInput{
 		QueueName: aws.String("pull_subscriber_" + subscriber),
-		//Attributes: map[string]*string{"VisibilityTimeout": aws.String("0")},
+		Attributes: map[string]*string{
+			"VisibilityTimeout": aws.String(strconv.Itoa(visibilityTimeout)),
+		},
 	})
 	if err != nil {
 		return nil, err
@@ -151,6 +185,17 @@ func (azn AWSEngine) CreatePullSubscriber(topic model.Topic, subscriber string) 
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating subscriber")
 	}
+
+	_, err = azn.SQSClient.SetQueueAttributes(&sqs.SetQueueAttributesInput{
+		QueueUrl: qoutput.QueueUrl,
+		Attributes: map[string]*string{
+			"Policy": getPolicy(topic.ResourceID, *qattrs.Attributes["QueueArn"], "pull_subscriber_"+subscriber),
+		},
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "Error creating subscriber's policy")
+	}
+
 	return &SubscriberOutput{SubscriptionID: *output.SubscriptionArn, PullingQueue: *qoutput.QueueUrl}, nil
 
 }
@@ -239,6 +284,35 @@ func (azn AWSEngine) DeleteMessages(messages []model.Message, queueUrl string) (
 		failedDeleteMessages = append(failedDeleteMessages, model.Message{MessageID: *errorMsg.Id})
 	}
 	return failedDeleteMessages, nil
+}
+
+func getPolicy(snsTopicArn string, sqsArn string, sqsName string) *string {
+	policy := PolicyDocument{
+		Version: "2012-10-17",
+		Id:      sqsArn + "/SQSDefaultPolicy",
+		Statement: []StatementEntry{
+			StatementEntry{
+				Sid:    sqsName,
+				Effect: "Allow",
+				Action: []string{
+					"sqs:SendMessage",
+				},
+				Resource: sqsArn,
+				Principal: map[string]string{
+					"Service": "sns.amazonaws.com",
+				},
+				Condition: Condition{
+					ArnLike: map[string]string{"AWS:SourceArn": snsTopicArn},
+				},
+			},
+		},
+	}
+	b, err := json.Marshal(&policy)
+	if err != nil {
+		fmt.Println("Error marshaling policy", err)
+		return nil
+	}
+	return aws.String(string(b))
 }
 
 /*

@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/wenance/wequeue-management_api/app"
 	"github.com/wenance/wequeue-management_api/app/client"
+	"github.com/wenance/wequeue-management_api/app/errors"
 	"github.com/wenance/wequeue-management_api/app/model"
 	"github.com/wenance/wequeue-management_api/app/service"
 )
@@ -23,13 +23,13 @@ var EngineService client.EngineService
 // @Produce json
 // @Param body body model.Topic true "Topic created for publishing messages"
 // @Success 201 {object} model.Topic
-// @Failure 400 {object} app.APIError
-// @Failure 500 {object} app.APIError
+// @Failure 400 {object} errors.APIError
+// @Failure 500 {object} errors.APIError
 // @Router /topics [post]
 func (t TopicController) Create(c *gin.Context) {
 	var json model.Topic
 	if err := c.ShouldBindJSON(&json); err != nil {
-		c.JSON(http.StatusBadRequest, app.NewAPIError(http.StatusBadRequest, "json_error", err.Error()))
+		c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "json_error", err.Error()))
 		return
 	}
 	engine := client.GetEngineService(json.Engine)
@@ -49,8 +49,8 @@ func (t TopicController) Create(c *gin.Context) {
 // @Produce json
 // @Param topic path string true "The name of the Topic"
 // @Success 200 {object} model.Topic
-// @Failure 404 {object} app.APIError
-// @Failure 500 {object} app.APIError
+// @Failure 404 {object} errors.APIError
+// @Failure 500 {object} errors.APIError
 // @Router /topics/{topic} [get]
 // @OperationId get-topic
 func (t TopicController) Get(c *gin.Context) {
@@ -62,7 +62,7 @@ func (t TopicController) Get(c *gin.Context) {
 		return
 	}
 	if topic == nil {
-		c.JSON(http.StatusNotFound, app.NewAPIError(http.StatusNotFound, "database_error", "The topic "+topicName+" doesn't exist"))
+		c.JSON(http.StatusNotFound, errors.NewAPIError(http.StatusNotFound, "database_error", "The topic "+topicName+" doesn't exist"))
 	}
 
 	c.JSON(http.StatusOK, &topic)

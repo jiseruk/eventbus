@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/wenance/wequeue-management_api/app"
+	"github.com/wenance/wequeue-management_api/app/errors"
 	"github.com/wenance/wequeue-management_api/app/model"
 	"github.com/wenance/wequeue-management_api/app/service"
 )
@@ -21,24 +21,31 @@ type SubscriptionController struct {
 // @Produce json
 // @Param body body model.Subscriber true "Subscriber to a topic"
 // @Success 201 {object} model.Subscriber
-// @Failure 400 {object} app.APIError
-// @Failure 500 {object} app.APIError
+// @Failure 400 {object} errors.APIError
+// @Failure 500 {object} errors.APIError
 // @Router /subscribers [post]
 func (t SubscriptionController) Create(c *gin.Context) {
 	var json model.Subscriber
 	if err := c.ShouldBindJSON(&json); err != nil {
-		c.JSON(http.StatusBadRequest, app.NewAPIError(http.StatusBadRequest, "json_error", err.Error()))
+		c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "json_error", err.Error()))
 		return
 	}
-	if json.Type == "push" && json.Endpoint == nil {
-		c.JSON(http.StatusBadRequest, app.NewAPIError(http.StatusBadRequest, "json_error", "The endpoint field is required for push subscribers"))
-		return
-	}
-	if json.Type == "pull" && json.Endpoint != nil {
-		c.JSON(http.StatusBadRequest, app.NewAPIError(http.StatusBadRequest, "json_error", "The endpoint field is invalid for pull subscribers"))
-		return
-	}
-	subscriber, err := service.SubscriptionsService.CreateSubscription(json.Name, json.Endpoint, json.Topic, json.Type)
+	/*
+		if json.Type == "push" && json.Endpoint == nil {
+			c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "json_error", "The endpoint field is required for push subscribers"))
+			return
+		}
+		if json.Type == "pull" {
+			if json.Endpoint != nil {
+				c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "json_error", "The endpoint field is invalid for pull subscribers"))
+				return
+			}
+			if json.VisibilityTimeout == nil {
+				c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "json_error", "The visibility_timeout field is required for pull subscribers"))
+				return
+			}
+		}*/
+	subscriber, err := service.SubscriptionsService.CreateSubscription(json.Name, json.Endpoint, json.Topic, json.Type, json.VisibilityTimeout)
 	if err != nil {
 		c.JSON(err.Status, err)
 		return
@@ -56,13 +63,13 @@ func (t SubscriptionController) Create(c *gin.Context) {
 // @Param subscriber query string true "The Subscriber name"
 // @Param max_messages query number true "Max messages to get"
 // @Success 200 {object} model.Messages
-// @Failure 400 {object} app.APIError
-// @Failure 500 {object} app.APIError
+// @Failure 400 {object} errors.APIError
+// @Failure 500 {object} errors.APIError
 // @Router /messages [get]
 func (t SubscriptionController) Consume(c *gin.Context) {
 	var consumeReq model.ConsumerRequest
 	if err := c.ShouldBindQuery(&consumeReq); err != nil {
-		c.JSON(http.StatusBadRequest, app.NewAPIError(http.StatusBadRequest, "json_error", err.Error()))
+		c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "json_error", err.Error()))
 		return
 	}
 	fmt.Print(consumeReq)
@@ -82,13 +89,13 @@ func (t SubscriptionController) Consume(c *gin.Context) {
 // @Produce json
 // @Param body body model.DeleteDeadLetterQueueMessagesRequest true "The messages list to delete"
 // @Success 200 {object} model.DeleteDeadLetterQueueMessagesResponse
-// @Failure 400 {object} app.APIError
-// @Failure 500 {object} app.APIError
+// @Failure 400 {object} errors.APIError
+// @Failure 500 {object} errors.APIError
 // @Router /messages [delete]
 func (t SubscriptionController) DeleteMessages(c *gin.Context) {
 	var deleteReq model.DeleteDeadLetterQueueMessagesRequest
 	if err := c.ShouldBindJSON(&deleteReq); err != nil {
-		c.JSON(http.StatusBadRequest, app.NewAPIError(http.StatusBadRequest, "json_error", err.Error()))
+		c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "json_error", err.Error()))
 		return
 	}
 	messages, err := service.SubscriptionsService.DeleteMessages(deleteReq.Subscriber, deleteReq.Messages)

@@ -89,6 +89,10 @@ func TestCreateSubscription(t *testing.T) {
 			Return(&sqs.CreateQueueOutput{QueueUrl: aws.String("queueUrl")}, nil).Once()
 		mockSQS.On("GetQueueAttributes", &sqs.GetQueueAttributesInput{QueueUrl: aws.String("queueUrl"), AttributeNames: []*string{aws.String("QueueArn")}}).
 			Return(&sqs.GetQueueAttributesOutput{Attributes: map[string]*string{"QueueArn": aws.String("queue:subs")}}, nil).Once()
+
+		mockLambda.On("AddPermission", mock.MatchedBy(func(input *lambda.AddPermissionInput) bool {
+			return true
+		})).Return(&lambda.AddPermissionOutput{}, nil).Once()
 		//Finnaly, The subscriber is created in the database
 		mockDynamo.On("PutItem", &dynamodb.PutItemInput{
 			Item:      subscriberItem,
@@ -118,11 +122,12 @@ func TestCreateSubscription(t *testing.T) {
 		mockSQS := &SQSAPIMock{}
 
 		subscriber := &model.Subscriber{Name: "subs",
-			Topic:        "topic",
-			Type:         "pull",
-			ResourceID:   "arn:subs",
-			PullingQueue: "queueUrl",
-			CreatedAt:    model.Clock.Now(),
+			Topic:             "topic",
+			Type:              "pull",
+			ResourceID:        "arn:subs",
+			PullingQueue:      "queueUrl",
+			VisibilityTimeout: aws.Int(10),
+			CreatedAt:         model.Clock.Now(),
 		}
 		subscriberItem, _ := dynamodbattribute.MarshalMap(subscriber)
 
@@ -137,8 +142,9 @@ func TestCreateSubscription(t *testing.T) {
 		})).Return(&dynamodb.GetItemOutput{Item: nil}, nil).Once()
 		//mockDAO.On("GetSubscription", "subs").Return(nil, nil).Once()
 
-		mockSQS.On("CreateQueue", &sqs.CreateQueueInput{QueueName: aws.String("pull_subscriber_subs")}).
-			Return(&sqs.CreateQueueOutput{QueueUrl: aws.String("queueUrl")}, nil).Once()
+		mockSQS.On("CreateQueue", &sqs.CreateQueueInput{QueueName: aws.String("pull_subscriber_subs"),
+			Attributes: map[string]*string{"VisibilityTimeout": aws.String("10")},
+		}).Return(&sqs.CreateQueueOutput{QueueUrl: aws.String("queueUrl")}, nil).Once()
 		mockSQS.On("GetQueueAttributes", &sqs.GetQueueAttributesInput{QueueUrl: aws.String("queueUrl"), AttributeNames: []*string{aws.String("QueueArn")}}).
 			Return(&sqs.GetQueueAttributesOutput{Attributes: map[string]*string{"QueueArn": aws.String("queue:subs")}}, nil).Once()
 		//The sqs queue is subscribed to the topic
@@ -147,16 +153,20 @@ func TestCreateSubscription(t *testing.T) {
 				TopicArn: aws.String("arn:topic"),
 				Protocol: aws.String("sqs")}).
 			Return(&sns.SubscribeOutput{SubscriptionArn: aws.String("arn:subs")}, nil).Once()
+
+		mockSQS.On("SetQueueAttributes", mock.MatchedBy(func(input *sqs.SetQueueAttributesInput) bool {
+			return true
+		})).Return(&sqs.SetQueueAttributesOutput{}, nil).Once()
 		//Finnaly, The subscriber is created in the database
 		mockDynamo.On("PutItem", &dynamodb.PutItemInput{
 			Item:      subscriberItem,
 			TableName: aws.String("Subscribers"),
 		}).Return(&dynamodb.PutItemOutput{}, nil).Once()
 
-		rec := executeMockedRequest(router, "POST", "/subscribers", `{"topic": "topic", "name":"subs", "type":"pull"}`)
+		rec := executeMockedRequest(router, "POST", "/subscribers", `{"topic": "topic", "name":"subs", "type":"pull", "visibility_timeout":10}`)
 
 		assert.Equal(t, 201, rec.Code)
-		assert.JSONEq(t, `{"topic": "topic", "name":"subs", "type":"pull", "pulling_queue":"queueUrl"}`,
+		assert.JSONEq(t, `{"topic": "topic", "name":"subs", "type":"pull", "pulling_queue":"queueUrl", "visibility_timeout":10}`,
 			rec.Body.String())
 
 		topicServiceMock.AssertExpectations(t)
@@ -229,6 +239,8 @@ func TestCreateSubscription(t *testing.T) {
 		{body: `{"name": "subscriber", "topic": "topic", "type":"push"}`, err: "endpoint is mandatory"},
 		{body: `{"name": "subscriber", "endpoint": 8, "type":"push"}`},
 		{body: `{"invalid": "topic", "invalid2": "lala"}`},
+		{body: `{"name": "subscriber", "visibility_timeout":-1, "type":"pull"}`, err: "visibility_timeout out of range"},
+		{body: `{"name": "subscriber", "visibility_timeout":50000, "type":"pull"}`, err: "visibility_timeout out of range"},
 		{body: `{"topic": "topic"}`},
 		{body: `{"name": "subscriber", "topic":"", "endpoint": "http://www.ole.com.ar", "type":"push"}`, err: "topic is empty"},
 		{body: `{}`},

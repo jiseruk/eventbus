@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin/binding"
+	validation "github.com/go-ozzo/ozzo-validation"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -29,6 +30,11 @@ func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 	if kindOfData(obj) == reflect.Struct {
 
 		v.lazyinit()
+		if validatableObj, ok := obj.(validation.Validatable); ok {
+			if err := validatableObj.Validate(); err != nil {
+				return error(err)
+			}
+		}
 
 		if err := v.validate.Struct(obj); err != nil {
 			return error(err)
