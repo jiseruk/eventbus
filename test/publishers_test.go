@@ -63,7 +63,7 @@ func TestPublishMessage(t *testing.T) {
 		rec := executeMockedRequest(router, "POST", "/messages", `{"topic": "topic", "payload":"message"}`)
 
 		assert.JSONEq(t,
-			`{"message": "The payload should be a json", "status": 400, "code": "json_error"}`,
+			`{"message": "payload: it should be a valid json object.", "status": 400, "code": "json_error"}`,
 			rec.Body.String())
 		assert.Equal(t, 400, rec.Code)
 
@@ -72,7 +72,7 @@ func TestPublishMessage(t *testing.T) {
 	for _, body := range []string{
 		``,
 		`lala`,
-		`{}`,
+		`{{}`,
 	} {
 		t.Run("It should fail publishing a message if the json is not valid", func(t *testing.T) {
 
@@ -81,7 +81,6 @@ func TestPublishMessage(t *testing.T) {
 				`{"message": "The request body is not a valid json", "status": 400, "code": "json_error"}`,
 				rec.Body.String())
 			assert.Equal(t, 400, rec.Code)
-
 
 		})
 	}

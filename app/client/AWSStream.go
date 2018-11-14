@@ -71,7 +71,8 @@ func (azn *AWSStreamEngine) DeleteTopic(resource string) error {
 }
 
 func (azn AWSStreamEngine) ReceiveMessages(resourceID string, maxMessages int64) ([]model.Message, error) {
-	//azn.KinesisClient.DescribeStream(&kinesis.DescribeStreamInput{StreamName: })
+	azn.KinesisClient.DescribeStream(&kinesis.DescribeStreamInput{
+		StreamName: &resourceID})
 
 	shards, err := azn.KinesisClient.GetShardIterator(&kinesis.GetShardIteratorInput{StreamName: &resourceID,
 		ShardId: aws.String("1")})

@@ -42,7 +42,6 @@ services:
     links:
       - mysql:mysql
       - localstack:localstack    
-      - subscriber:subscriber
     ports:
       - '8080:8080'
     environment:

@@ -1,0 +1,22 @@
+engines:
+  AWS:
+    region: us-east-1
+    sns: 
+      endpoint: 
+    kinesis: 
+      endpoint: 
+    lambda:
+      endpoint:
+      executionRole: 
+      zipDir: /home/jiseruk/go/src/github.com/wenance/wequeue-management_api/lambda/
+    sqs:
+      endpoint: 
+    dynamodb:
+      endpoint: 
+
+database:
+  mysql:
+    user: root
+    password: root
+    database: wequeue
+    host: mysql
