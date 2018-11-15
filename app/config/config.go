@@ -38,7 +38,7 @@ func init() {
 		Config.Set("aws_credentials", credentials.NewStaticCredentials("foo", "bar", ""))
 	} else if currentEnv == DEVELOP {
 		Config.AddConfigPath("../app/config")
-		Config.Set("aws_credentials", credentials.NewEnvCredentials())
+		//Config.Set("aws_credentials", credentials.NewEnvCredentials())
 	}
 	err := Config.ReadInConfig()
 	if err != nil {
