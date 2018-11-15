@@ -18,7 +18,9 @@ func GetRouter() *gin.Engine {
 	topics := controller.TopicController{}
 	subscribers := controller.SubscriptionController{}
 	publishers := controller.PublisherController{}
+	health := controller.HealthController{}
 
+	router.GET("/ping", health.Ping)
 	router.POST("/topics", topics.Create)
 	router.GET("/topics/:topic", topics.Get)
 	router.POST("/subscribers", subscribers.Create)

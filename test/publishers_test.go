@@ -54,7 +54,6 @@ func TestPublishMessage(t *testing.T) {
 			assert.Equal(t, 201, rec.Code)
 			mockSNS.AssertExpectations(t)
 			topicServiceMock.AssertExpectations(t)
-			//mockDAO.AssertExpectations(t)
 		})
 	}
 

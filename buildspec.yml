@@ -1,0 +1,37 @@
+version: 0.2
+
+env:
+  variables:
+    imagen: wenance/wequeue-service
+    current_version: v0.1
+    
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - $(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION)
+      - wget -O /bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64 && chmod +x /bin/jq
+  build:
+    commands:
+      - echo Test
+      - echo Build started on `date`
+      - echo Building the Docker image...          
+      - docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:latest && docker tag $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE build-image || echo first image
+      - docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:dependencies && docker tag $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:dependencies build-image || echo first image  
+      - docker build --cache-from=build-image --target=builder --build-arg ENVIRONMENT=$AMBIENTES -t $imagen:builder .
+      - docker build --cache-from=build-image,latest --build-arg ENVIRONMENT=$AMBIENTES -t $imagen .
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - docker images
+      - echo "Pushing the Docker image ($imagen) to repo ($IMAGE)..."
+      - export current_build=$(aws ecr describe-images --repository-name $IMAGE | jq -r '.imageDetails[].imageTags[]?' | grep "${current_version}." | awk -F. '{print $3+1} END{print 0}' | sort -g | tail -1 || echo 0)
+      - echo version ${current_version}.$current_build
+      - docker tag $imagen:builder $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:dependencies  
+      - docker tag $imagen $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:${current_version}.$current_build
+      - docker tag $imagen $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:latest
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE
+      - echo '{"tag":"'${current_version}.$current_build'"}' > build.json
+artifacts:
+  files: build.json
+

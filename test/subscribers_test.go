@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/wenance/wequeue-management_api/app/client"
+	apierrors "github.com/wenance/wequeue-management_api/app/errors"
 	"github.com/wenance/wequeue-management_api/app/model"
 	"github.com/wenance/wequeue-management_api/app/server"
 	"github.com/wenance/wequeue-management_api/app/service"
@@ -227,6 +228,37 @@ func TestCreateSubscription(t *testing.T) {
 			rec.Body.String())
 	})
 
+	t.Run("it should fail creating the subscriber when a getTopic() error happends", func(t *testing.T) {
+		topicServiceMock := &TopicServiceMock{}
+		service.TopicsService = topicServiceMock
+
+		topicServiceMock.On("GetTopic", "topic").
+			Return(nil, apierrors.NewAPIError(500, "database_error", "Error getting topic")).Once()
+		rec := executeMockedRequest(router, "POST", "/subscribers", `{"topic": "topic", "name":"subs", "endpoint":"http://subscriber/endp", "type":"push"}`)
+
+		assert.Equal(t, 500, rec.Code)
+		assert.Equal(t, `{"message":"Error getting topic","code":"database_error","status":500}`,
+			rec.Body.String())
+	})
+
+	t.Run("it should fail creating the subscriber when a dao.getSubscriber() error happends", func(t *testing.T) {
+		topicServiceMock := &TopicServiceMock{}
+		service.TopicsService = topicServiceMock
+
+		//Topic should exist
+		topicServiceMock.On("GetTopic", "topic").
+			Return(&model.Topic{ResourceID: "arn:topic", Name: "topic", Engine: "AWS"}, nil).Once()
+
+		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
+				return *input.Key["name"].S == "subs" && *input.TableName == "Subscribers"
+			})).Return(nil, errors.New("Dynamodb error")).Once()
+
+		rec := executeMockedRequest(router, "POST", "/subscribers", `{"topic": "topic", "name":"subs", "endpoint":"http://subscriber/endp", "type":"push"}`)
+
+		assert.Equal(t, 500, rec.Code)
+		assert.Equal(t, `{"message":"Dynamodb error","code":"database_error","status":500}`,
+			rec.Body.String())
+	})
 	for _, r := range []struct {
 		body string
 		err  string
@@ -253,6 +285,36 @@ func TestCreateSubscription(t *testing.T) {
 			assert.Equal(t, 400, res.Code, res.Body.String())
 		})
 	}
+
+	t.Run("it should fail creating the push subscriber if an sqs.CreateQueue() error happends", func(t *testing.T) {
+		mockSQS := &SQSAPIMock{}
+		topicServiceMock := &TopicServiceMock{}
+		service.TopicsService = topicServiceMock
+		client.EnginesMap["AWS"] = &client.AWSEngine{SQSClient: mockSQS}
+
+		subscriber := &model.Subscriber{Name: "subs",
+			Topic:             "topic",
+			Type:              "pull",
+			ResourceID:        "arn:subs",
+			PullingQueue:      "queueUrl",
+			VisibilityTimeout: aws.Int(10),
+			CreatedAt:         model.Clock.Now(),
+		}
+		//Topic should exist
+		topicServiceMock.On("GetTopic", "topic").
+			Return(&model.Topic{ResourceID: "arn:topic", Name: "topic", Engine: "AWS"}, nil).Once()
+		//Subscriber with the provided name shold not exist in DB
+		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
+			return *input.Key["name"].S == subscriber.Name && *input.TableName == "Subscribers"
+		})).Return(&dynamodb.GetItemOutput{Item: nil}, nil).Once()
+
+		mockSQS.On("CreateQueue", &sqs.CreateQueueInput{QueueName: aws.String("pull_subscriber_subs"),
+			Attributes: map[string]*string{"VisibilityTimeout": aws.String("10")},
+		}).Return(nil, errors.New("Create Queue error")).Once()
+
+		rec := executeMockedRequest(router, "POST", "/subscribers", `{"topic": "topic", "name":"subs", "visibility_timeout":10, "type":"pull"}`)
+		assert.Equal(t, 500, rec.Code)
+	})
 }
 
 func TestConsumeQueueMessages(t *testing.T) {
