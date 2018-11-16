@@ -58,3 +58,7 @@ func GetObject(key string) interface{} {
 func GetCurrentEnvironment() *string {
 	return &currentEnv
 }
+
+func SetCurrentEnvironment(environment string) {
+	currentEnv = environment
+}

@@ -34,7 +34,7 @@ func getLambdaMock(endpoint string, subscriber string, topic string, dlqArn stri
 	environment.Variables["subscriber_url"] = &endpoint
 	environment.Variables["topic"] = &topic
 	environment.Variables["queue_name"] = aws.String("dlq_lambda_" + subscriber)
-	environment.Variables["environment"] = aws.String(config.LOCAL)
+	environment.Variables["environment"] = config.GetCurrentEnvironment()
 
 	createArgs := &lambda.CreateFunctionInput{
 		Code:             createCode,
