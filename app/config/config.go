@@ -28,7 +28,7 @@ func init() {
 	viper.MergeInConfig()
 
 	if environment, ok := os.LookupEnv("GO_ENVIRONMENT"); !ok {
-		currentEnv = LOCAL
+		currentEnv = DEVELOP
 	} else {
 		currentEnv = environment
 	}
