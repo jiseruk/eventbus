@@ -8,7 +8,7 @@ engines:
     lambda:
       endpoint:
       executionRole: 
-      zipDir: /home/jiseruk/go/src/github.com/wenance/wequeue-management_api/lambda/
+      zipDir: /go/src/github.com/wenance/wequeue-management_api/lambda/
     sqs:
       endpoint: 
     dynamodb:
