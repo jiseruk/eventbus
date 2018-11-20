@@ -23,14 +23,14 @@ services:
       - "/private${TMPDIR}/localstack:/tmp/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
 
-    mysql:
-      image: mysql:latest
-      ports:
-        - '3306:3306'
-      environment:
-        MYSQL_ROOT_USER: root
-        MYSQL_ROOT_PASSWORD: root
-        <<: *common-variables
+  mysql:
+    image: mysql:latest
+    ports:
+      - '3306:3306'
+    environment:
+      MYSQL_ROOT_USER: root
+      MYSQL_ROOT_PASSWORD: root
+      <<: *common-variables
   
   wequeue:
     build:

@@ -36,7 +36,11 @@ func GetClient() dynamodbiface.DynamoDBAPI {
 	if err != nil {
 		panic("FATAL: Connot connect to AWS")
 	}*/
-	dynamoClient := dynamodb.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint(dynamoEndpoint))
+	dynamoClient := dynamodb.New(sess, aws.NewConfig().
+		WithLogLevel(aws.LogDebugWithHTTPBody).
+		WithEndpoint(dynamoEndpoint).
+		WithDisableSSL(true),
+	)
 	if *config.GetCurrentEnvironment() == config.LOCAL || *config.GetCurrentEnvironment() == config.DEVELOP {
 		dynamoClient.CreateTable(&dynamodb.CreateTableInput{
 			TableName: aws.String(subscribersTable),

@@ -81,10 +81,21 @@ func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI, kinesisiface.KinesisA
 			}),
 		)
 	}
-	snsClient := sns.New(sess, aws.NewConfig().WithEndpoint(snsEndpoint))
-	lambdaClient := lambda.New(sess, aws.NewConfig().WithEndpoint(lambdaEndpoint))
-	kinesisClient := kinesis.New(sess, aws.NewConfig().WithEndpoint(kinesisEndpoint))
-	sqsClient := sqs.New(sess, aws.NewConfig().WithEndpoint(sqsEndpoint))
+	snsClient := sns.New(sess, aws.NewConfig().
+		WithEndpoint(snsEndpoint).
+		WithDisableSSL(true),
+	)
+	lambdaClient := lambda.New(sess, aws.NewConfig().
+		WithEndpoint(lambdaEndpoint).
+		WithDisableSSL(true),
+	)
+	kinesisClient := kinesis.New(sess, aws.NewConfig().
+		WithEndpoint(kinesisEndpoint).
+		WithDisableSSL(true),
+	)
+	sqsClient := sqs.New(sess, aws.NewConfig().
+		WithEndpoint(sqsEndpoint).WithDisableSSL(true),
+	)
 	return snsClient, lambdaClient, kinesisClient, sqsClient
 }
 
