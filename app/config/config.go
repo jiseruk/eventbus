@@ -21,31 +21,25 @@ var currentEnv string
 
 func init() {
 	Config = viper.New()
-	Config.SetConfigType("yaml")
-	Config.AddConfigPath("./app/config")
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.AutomaticEnv()
-	viper.MergeInConfig()
+	Config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	Config.AutomaticEnv()
 
 	if environment, ok := os.LookupEnv("GO_ENVIRONMENT"); !ok {
 		currentEnv = DEVELOP
 	} else {
 		currentEnv = environment
 	}
-	fmt.Printf("Current environment: %s \n", currentEnv)
 	Config.SetConfigName(currentEnv)
+	gopath, _ := os.LookupEnv("GOPATH")
+	Config.SetConfigFile(gopath + "/src/github.com/wenance/wequeue-management_api/app/config/" + currentEnv + ".yml")
 	if currentEnv == LOCAL {
-		Config.AddConfigPath("../app/config")
 		Config.Set("aws_credentials", credentials.NewStaticCredentials("foo", "bar", ""))
-	} else if currentEnv == DEVELOP {
-		Config.AddConfigPath("../app/config")
-		//Config.Set("aws_credentials", credentials.NewEnvCredentials())
-	}
+	}	
 	err := Config.ReadInConfig()
 	if err != nil {
 		panic(fmt.Errorf("Fatal error config file: %#v", err))
 	}
-	fmt.Print(Config.GetString("engines.AWS.sns"))
+	fmt.Printf("Current environment: %s \n", currentEnv)
 }
 
 func Get(key string) string {

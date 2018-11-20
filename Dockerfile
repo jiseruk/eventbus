@@ -20,11 +20,12 @@ RUN cd test && go test -covermode=count -coverprofile=cover.out -coverpkg=../app
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main . 
 
 FROM busybox:musl
+ENV GOPATH /go
 WORKDIR /go/src/github.com/wenance/wequeue-management_api 
 COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/main /go/src/github.com/wenance/wequeue-management_api/main 
 COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/lambda /go/src/github.com/wenance/wequeue-management_api/lambda
 COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/app/config/local.yml /go/src/github.com/wenance/wequeue-management_api/app/config/local.yml 
-COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/app/config/local.yml /go/src/github.com/wenance/wequeue-management_api/app/config/develop.yml 
+COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/app/config/develop.yml /go/src/github.com/wenance/wequeue-management_api/app/config/develop.yml 
 
 CMD ["./main"]
 EXPOSE 8080 
