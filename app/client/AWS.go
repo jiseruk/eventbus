@@ -64,15 +64,23 @@ type SNSNotification struct {
 }
 
 func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI, kinesisiface.KinesisAPI, sqsiface.SQSAPI) {
-	sess := session.Must(
-		session.NewSession(&aws.Config{
-			Region: aws.String("us-east-1"),
-			//Credentials: credentials.NewSharedCredentials("", "default"),
-			Credentials: config.GetObject("aws_credentials").(*credentials.Credentials),
-			//Endpoint:    aws.String(SNSEndpoint),
-		}),
-	)
+	var sess *session.Session
+	if config.GetObject("aws_credentials") == nil {
 
+		sess = session.Must(
+			session.NewSession(&aws.Config{
+				Region: aws.String("us-east-1"),
+			}),
+		)
+	} else {
+		sess = session.Must(
+			session.NewSession(&aws.Config{
+				Region: aws.String("us-east-1"),
+				//Credentials: credentials.NewSharedCredentials("", "default"),
+				Credentials: config.GetObject("aws_credentials").(*credentials.Credentials),
+			}),
+		)
+	}
 	snsClient := sns.New(sess, aws.NewConfig().WithEndpoint(snsEndpoint))
 	lambdaClient := lambda.New(sess, aws.NewConfig().WithEndpoint(lambdaEndpoint))
 	kinesisClient := kinesis.New(sess, aws.NewConfig().WithEndpoint(kinesisEndpoint))

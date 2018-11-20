@@ -12,13 +12,30 @@ import (
 var dynamoEndpoint = config.Get("engines.AWS.dynamodb.endpoint")
 
 func GetClient() dynamodbiface.DynamoDBAPI {
-	sess, err := session.NewSession(&aws.Config{
+	var sess *session.Session
+	if config.GetObject("aws_credentials") == nil {
+
+		sess = session.Must(
+			session.NewSession(&aws.Config{
+				Region: aws.String("us-east-1"),
+			}),
+		)
+	} else {
+		sess = session.Must(
+			session.NewSession(&aws.Config{
+				Region: aws.String("us-east-1"),
+				//Credentials: credentials.NewSharedCredentials("", "default"),
+				Credentials: config.GetObject("aws_credentials").(*credentials.Credentials),
+			}),
+		)
+	}
+	/*sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String("us-east-1"),
 		Credentials: config.GetObject("aws_credentials").(*credentials.Credentials),
 	})
 	if err != nil {
 		panic("FATAL: Connot connect to AWS")
-	}
+	}*/
 	dynamoClient := dynamodb.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithHTTPBody).WithEndpoint(dynamoEndpoint))
 	if *config.GetCurrentEnvironment() == config.LOCAL || *config.GetCurrentEnvironment() == config.DEVELOP {
 		dynamoClient.CreateTable(&dynamodb.CreateTableInput{
