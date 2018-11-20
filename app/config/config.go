@@ -32,6 +32,7 @@ func init() {
 	} else {
 		currentEnv = environment
 	}
+	fmt.Printf("Current environment: %s \n", currentEnv)
 	Config.SetConfigName(currentEnv)
 	if currentEnv == LOCAL {
 		Config.AddConfigPath("../app/config")

@@ -45,7 +45,7 @@ services:
     ports:
       - '8080:8080'
     environment:
-      GO_ENVIRONMENT: local
+      GO_ENVIRONMENT: develop
       RUN_TESTS: 
       <<: *common-variables
 
