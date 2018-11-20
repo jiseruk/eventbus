@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/wenance/wequeue-management_api/app/server"
+	_ "github.com/wenance/wequeue-management_api/app/config"
 	_ "github.com/wenance/wequeue-management_api/app/validation"
 	_ "github.com/wenance/wequeue-management_api/docs"
 )
