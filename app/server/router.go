@@ -7,7 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/wenance/wequeue-management_api/app/controller"
 	"github.com/wenance/wequeue-management_api/app/errors"
-	"github.com/wenance/wequeue-management_api/app/model"
 )
 
 func GetRouter() *gin.Engine {
@@ -35,19 +34,19 @@ func GetRouter() *gin.Engine {
 	})
 
 	router.POST("/test_subscriber", func(c *gin.Context) {
-		var message model.PublishMessage
+		var message map[string]interface{}
 		if err := c.ShouldBindJSON(&message); err != nil {
 			c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "json_error", err.Error()))
 			return
 		}
 		log.Printf("Message received: %#v", message)
 
-		payload := message.Payload.(map[string]interface{})
+		/*payload := message.Payload.(map[string]interface{})
 		log.Printf("Message received, payload: %#v", payload)
 		if payload != nil && payload["fail"] == true {
 			c.JSON(http.StatusInternalServerError, &message)
 			return
-		}
+		}*/
 		c.JSON(http.StatusOK, &message)
 
 	})

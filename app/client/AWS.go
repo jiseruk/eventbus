@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/aws/aws-sdk-go/service/kinesis/kinesisiface"
@@ -81,20 +82,50 @@ func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI, kinesisiface.KinesisA
 			}),
 		)
 	}
+	myCustomResolver := func(service, region string, optFns ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
+		switch service {
+		case endpoints.SnsServiceID:
+			if snsEndpoint != "" {
+				return endpoints.ResolvedEndpoint{
+					URL: snsEndpoint,
+				}, nil
+			}
+		case endpoints.SqsServiceID:
+			if sqsEndpoint != "" {
+				return endpoints.ResolvedEndpoint{
+					URL: sqsEndpoint,
+				}, nil
+			}
+		case endpoints.LambdaServiceID:
+			if lambdaEndpoint != "" {
+				return endpoints.ResolvedEndpoint{
+					URL: lambdaEndpoint,
+				}, nil
+			}
+		case endpoints.KinesisServiceID:
+			if kinesisEndpoint != "" {
+				return endpoints.ResolvedEndpoint{
+					URL: kinesisEndpoint,
+				}, nil
+			}
+		}
+		return endpoints.DefaultResolver().EndpointFor(service, region, optFns...)
+	}
+
 	snsClient := sns.New(sess, aws.NewConfig().
-		WithEndpoint(snsEndpoint).
-		WithDisableSSL(true),
+		WithEndpointResolver(endpoints.ResolverFunc(myCustomResolver)),
 	)
+
 	lambdaClient := lambda.New(sess, aws.NewConfig().
-		WithEndpoint(lambdaEndpoint).
-		WithDisableSSL(true),
+		WithEndpointResolver(endpoints.ResolverFunc(myCustomResolver)),
 	)
+
 	kinesisClient := kinesis.New(sess, aws.NewConfig().
-		WithEndpoint(kinesisEndpoint).
-		WithDisableSSL(true),
+		WithEndpointResolver(endpoints.ResolverFunc(myCustomResolver)),
 	)
+
 	sqsClient := sqs.New(sess, aws.NewConfig().
-		WithEndpoint(sqsEndpoint).WithDisableSSL(true),
+		WithEndpointResolver(endpoints.ResolverFunc(myCustomResolver)),
 	)
 	return snsClient, lambdaClient, kinesisClient, sqsClient
 }

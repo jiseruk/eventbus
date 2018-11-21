@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/wenance/wequeue-management_api/app/client"
+	"github.com/wenance/wequeue-management_api/app/config"
 	"github.com/wenance/wequeue-management_api/app/model"
 	"github.com/wenance/wequeue-management_api/app/server"
 	"github.com/wenance/wequeue-management_api/app/service"
@@ -208,4 +209,8 @@ func TestGetTopic(t *testing.T) {
 		})
 	}
 
+}
+
+func TestConfig(t *testing.T) {
+	assert.Equal(t, nil, config.GetObject("engines.AWS.sns.endpoint"))
 }

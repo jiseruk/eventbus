@@ -2,7 +2,8 @@ package client
 
 import (
 	"bytes"
-	"io"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -27,16 +28,21 @@ func CheckEndpoint(url *string) (bool, error) {
 	if url == nil {
 		return true, nil
 	}
-	message := []byte(`{"payload":{}, "topic":"test_topic"}`)
+	message := []byte(`{"payload":{"test":true}, "topic":"test_topic"}`)
 
 	resp, err := HTTPClient.Post(*url, "application/json", bytes.NewBuffer(message))
 	if err != nil {
 		return false, err
 	}
 	defer resp.Body.Close()
-	io.Copy(ioutil.Discard, resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
+	fmt.Printf("BODY endpoint %s", string(body))
+	if err != nil {
+		return false, err
+	}
+	//io.Copy(ioutil.Discard, resp.Body)
 	if resp.StatusCode >= 400 {
-		return false, nil
+		return false, errors.New(string(body))
 	}
 
 	// handling error and doing stuff with body that needs to be unit tested

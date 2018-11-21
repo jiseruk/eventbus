@@ -22,6 +22,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 FROM busybox:musl
 ENV GOPATH /go
 WORKDIR /go/src/github.com/wenance/wequeue-management_api 
+COPY --from=tests /etc/ssl/certs /etc/ssl/certs
 COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/main /go/src/github.com/wenance/wequeue-management_api/main 
 COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/lambda /go/src/github.com/wenance/wequeue-management_api/lambda
 COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/app/config/local.yml /go/src/github.com/wenance/wequeue-management_api/app/config/local.yml 

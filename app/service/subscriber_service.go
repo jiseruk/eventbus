@@ -40,7 +40,7 @@ func (s SubscriptionServiceImpl) CreateSubscription(name string, endpoint *strin
 		return nil, errors.NewAPIError(http.StatusBadRequest, "database_error", fmt.Sprintf("Subscription with name %s already exists", name))
 	}
 
-	if ok, err := client.CheckEndpoint(endpoint); !ok || err != nil {
+	if ok, err := client.CheckEndpoint(endpoint); !ok {
 		if err != nil {
 			return nil, errors.NewAPIError(http.StatusBadRequest, "endpoint_error", fmt.Sprintf("The endpoint %s should return 2xx to a POST HTTP Call, but return error: %v", *endpoint, err.Error()))
 		}

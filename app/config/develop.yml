@@ -1,18 +1,9 @@
 engines:
   AWS:
     region: us-east-1
-    sns: 
-      endpoint: 
-    kinesis: 
-      endpoint: 
     lambda:
-      endpoint:
       executionRole: 
       zipDir: /go/src/github.com/wenance/wequeue-management_api/lambda/
-    sqs:
-      endpoint: 
-    dynamodb:
-      endpoint: 
 
 database:
   mysql:
