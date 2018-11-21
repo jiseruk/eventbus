@@ -40,7 +40,7 @@ func getLambdaMock(endpoint string, subscriber string, topic string, dlqArn stri
 		Code:             createCode,
 		FunctionName:     aws.String("lambda_subscriber_" + subscriber),
 		Handler:          aws.String("subscriber.handler"),
-		Role:             aws.String(""),
+		Role:             aws.String(config.Get("engines.AWS.lambda.executionRole")),
 		Runtime:          aws.String("python2.7"),
 		Environment:      &environment,
 		DeadLetterConfig: &lambda.DeadLetterConfig{TargetArn: &dlqArn},
