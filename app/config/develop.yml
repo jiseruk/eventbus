@@ -2,7 +2,7 @@ engines:
   AWS:
     region: us-east-1
     lambda:
-      executionRole: 
+      executionRole: arn:aws:iam::719849485599:role/AmazonECSTask-wequeue-service-dev
       zipDir: /go/src/github.com/wenance/wequeue-management_api/lambda/
 
 database:
