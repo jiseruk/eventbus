@@ -4,6 +4,7 @@ engines:
     lambda:
       executionRole: arn:aws:iam::719849485599:role/AmazonECSTask-wequeue-service-dev
       zipDir: /go/src/github.com/wenance/wequeue-management_api/lambda/
+      createPolicy: true
 
 database:
   mysql:

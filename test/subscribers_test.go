@@ -250,8 +250,8 @@ func TestCreateSubscription(t *testing.T) {
 			Return(&model.Topic{ResourceID: "arn:topic", Name: "topic", Engine: "AWS"}, nil).Once()
 
 		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
-				return *input.Key["name"].S == "subs" && *input.TableName == "Subscribers"
-			})).Return(nil, errors.New("Dynamodb error")).Once()
+			return *input.Key["name"].S == "subs" && *input.TableName == "Subscribers"
+		})).Return(nil, errors.New("Dynamodb error")).Once()
 
 		rec := executeMockedRequest(router, "POST", "/subscribers", `{"topic": "topic", "name":"subs", "endpoint":"http://subscriber/endp", "type":"push"}`)
 
@@ -325,18 +325,26 @@ func TestConsumeQueueMessages(t *testing.T) {
 		subscriber *model.Subscriber
 		queueType  string
 		queueURL   string
+		body       *string
 	}{
-		{subscriber: &model.Subscriber{Endpoint: aws.String("http://subscriber/endp"),
-			Name: "subs", Topic: "topic", ResourceID: "arn:subs",
-			DeadLetterQueue: "dlq_queue", Type: "push",
-		},
+		{
+			subscriber: &model.Subscriber{Endpoint: aws.String("http://subscriber/endp"),
+				Name: "subs", Topic: "topic", ResourceID: "arn:subs",
+				DeadLetterQueue: "dlq_queue", Type: "push",
+			},
 			queueType: "dead letter queue",
-			queueURL:  "dlq_queue"},
-		{subscriber: &model.Subscriber{Name: "subs", Topic: "topic",
-			ResourceID: "arn:subs", PullingQueue: "queue", Type: "pull",
+			queueURL:  "dlq_queue",
+			body:      aws.String(fmt.Sprintf(`{"Records": [{"Sns": {"Timestamp": "2018-11-22T14:02:21.284430Z", "Message": "{\"topic\":\"topic\",\"payload\":{\"hola\":\"lala\"},\"timestamp\":%d}", "Type": "Notification", "TopicArn": "arn:aws:sns:us-east-1:123456789012:test_topic", "Subject": null}}]}`, model.Clock.Now().UnixNano())),
 		},
+		{
+			subscriber: &model.Subscriber{Name: "subs", Topic: "topic",
+				ResourceID: "arn:subs", PullingQueue: "queue", Type: "pull",
+			},
 			queueType: "queue",
-			queueURL:  "queue"},
+			queueURL:  "queue",
+			body: aws.String(fmt.Sprintf(`{"Message":"{\"payload\":%s,\"timestamp\":%d,\"topic\":\"topic\"}","MessageId":"1","Type":"Notification","TopicArn":"arn:topic"}`,
+				`{\"hola\":\"lala\"}`, model.Clock.Now().UnixNano())),
+		},
 	} {
 		t.Run("It should get messages from "+test.queueType, func(t *testing.T) {
 			mockSQS := &SQSAPIMock{}
@@ -356,8 +364,7 @@ func TestConsumeQueueMessages(t *testing.T) {
 				MaxNumberOfMessages: aws.Int64(10), QueueUrl: &test.queueURL}).
 				Return(&sqs.ReceiveMessageOutput{
 					Messages: []*sqs.Message{
-						{Body: aws.String(fmt.Sprintf(`{"Message":"{\"payload\":%s,\"timestamp\":%d,\"topic\":\"topic\"}","MessageId":"1","Type":"Notification","TopicArn":"arn:topic"}`,
-							`{\"hola\":\"lala\"}`, model.Clock.Now().UnixNano())),
+						{Body: test.body,
 							MessageId:     aws.String("1"),
 							ReceiptHandle: aws.String("x")},
 					},

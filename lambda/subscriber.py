@@ -14,7 +14,7 @@ def handler(event, context):
     print("Received event: " + json.dumps(event, indent=2))
     print("Endpoint:" + endpoint)
     message = json.loads(event['Records'][0]['Sns']['Message'])
-    payload = {"payload": message, "topic": topic}
+    #payload = {"payload": message, "topic": topic}
     try:
         r = requests.post(endpoint, json=message, headers={"Content-type": "application/json"})
         print("POST message result: ", r.status_code)
@@ -28,6 +28,6 @@ def handler(event, context):
             import boto3
             sqs = boto3.resource('sqs', region_name='us-east-1', endpoint_url='http://localhost:4576')
             queue = sqs.get_queue_by_name(QueueName=queueName)
-            queue.send_message(MessageBody=json.dumps(payload))
+            queue.send_message(MessageBody=json.dumps(event))
         else:
             raise e

@@ -46,5 +46,13 @@ services:
     environment:
       ENGINES_AWS_LAMBDA_EXECUTIONROLE: arn:role:dummy  
       GO_ENVIRONMENT: local
+      NEW_RELIC_LICENSE_KEY: 1bd07dd02fbaade38e40f19961382100bd9259aa
+      NEW_RELIC_APP_NAME: bondi
       <<: *common-variables
 
+  consumer:
+    build:
+      context: consumer
+      dockerfile: Dockerfile    
+    ports:
+      - '9000:9000'  

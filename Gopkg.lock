@@ -229,6 +229,12 @@
   version = "1.0.1"
 
 [[projects]]
+  name = "github.com/newrelic/go-agent"
+  packages = [".","_integrations/nrgin/v1","internal","internal/cat","internal/jsonx","internal/logger","internal/sysinfo","internal/utilization"]
+  revision = "46d73e6be8b4faeee70850d0df829e4fe00d6819"
+  version = "v2.1.0"
+
+[[projects]]
   name = "github.com/olekukonko/tablewriter"
   packages = ["."]
   revision = "e6d60cf7ba1f42d86d54cdf5508611c4aafb3970"
@@ -375,6 +381,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8fa98aed27ebeb19f84dbd5595ca2f41740e6b4c042926bcdc9e59b58b02d839"
+  inputs-digest = "dadf61d22add5903f751f6f28f40097e586d92eb00da4e36fe1c5c2968822434"
   solver-name = "gps-cdcl"
   solver-version = 1

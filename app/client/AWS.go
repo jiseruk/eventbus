@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -18,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
+	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"github.com/wenance/wequeue-management_api/app/config"
 	"github.com/wenance/wequeue-management_api/app/model"
@@ -55,6 +57,14 @@ type AWSEngine struct {
 type DeadLetterQueueInput struct {
 	QueueArn  *string
 	QueueName *string
+}
+
+type DLQSNSNotification struct {
+	Records []map[string]map[string]interface{}
+}
+
+type SNSObject struct {
+	Sns SNSNotification
 }
 
 type SNSNotification struct {
@@ -117,7 +127,8 @@ func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI, kinesisiface.KinesisA
 	)
 
 	lambdaClient := lambda.New(sess, aws.NewConfig().
-		WithEndpointResolver(endpoints.ResolverFunc(myCustomResolver)),
+		WithEndpointResolver(endpoints.ResolverFunc(myCustomResolver)).
+		WithLogLevel(aws.LogDebugWithHTTPBody),
 	)
 
 	kinesisClient := kinesis.New(sess, aws.NewConfig().
@@ -194,18 +205,19 @@ func (azn AWSEngine) CreatePushSubscriber(topic model.Topic, subscriber string, 
 		return nil, errors.Wrap(err, "Error creating subscriber")
 	}
 
-	_, err = azn.LambdaClient.AddPermission(&lambda.AddPermissionInput{
-		Action:       aws.String("lambda:InvokeFunction"),
-		FunctionName: aws.String("lambda_subscriber_" + subscriber),
-		Principal:    aws.String("sns.amazonaws.com"),
-		SourceArn:    &topic.ResourceID,
-		StatementId:  aws.String("lambda_subscriber_" + subscriber),
-	})
+	if config.GetBool("engines.AWS.lambda.createPolicy") {
+		_, err = azn.LambdaClient.AddPermission(&lambda.AddPermissionInput{
+			Action:       aws.String("lambda:InvokeFunction"),
+			FunctionName: aws.String("lambda_subscriber_" + subscriber),
+			Principal:    aws.String("sns.amazonaws.com"),
+			SourceArn:    &topic.ResourceID,
+			StatementId:  aws.String("lambda_subscriber_" + subscriber),
+		})
 
-	if err != nil {
-		return nil, errors.Wrap(err, "Error creating subscriber's policy")
+		if err != nil {
+			return nil, errors.Wrap(err, "Error creating subscriber's policy")
+		}
 	}
-
 	return &SubscriberOutput{SubscriptionID: *output.SubscriptionArn, DeadLetterQueue: *qoutput.QueueUrl}, nil
 
 }
@@ -255,21 +267,32 @@ func (azn AWSEngine) ReceiveMessages(resourceID string, maxMessages int64) ([]mo
 	if err != nil {
 		return nil, err
 	}
-
 	messages := make([]model.Message, len(output.Messages))
 	for i, msg := range output.Messages {
-		var payload SNSNotification
-		fmt.Printf("MSG %s", *msg.Body)
-		err := json.Unmarshal([]byte(*msg.Body), &payload)
+		buff := bytes.NewBufferString(*msg.Body)
+		decoder := json.NewDecoder(buff)
+		decoder.DisallowUnknownFields()
+		var snsnotif SNSNotification
+		err := decoder.Decode(&snsnotif)
+		//Si es una dead-letter-queue de un push subscriber
 		if err != nil {
-			fmt.Printf("Error unmarshalling data %s", *msg.Body)
-			return nil, err
+			var dlqPayload DLQSNSNotification
+			err := json.Unmarshal([]byte(*msg.Body), &dlqPayload)
+			if err != nil {
+				fmt.Printf("Error unmarshalling data %s", *msg.Body)
+				return nil, err
+			}
+			err = mapstructure.Decode(dlqPayload.Records[0]["Sns"], &snsnotif)
+			if err != nil {
+				fmt.Print(err.Error())
+				return nil, err
+			}
 		}
+
 		var publishedMessage model.PublishMessage
-		fmt.Printf("MSG PAYLOAD %s", payload.Message)
-		err = json.Unmarshal([]byte(payload.Message), &publishedMessage)
+		err = json.Unmarshal([]byte(snsnotif.Message), &publishedMessage)
 		if err != nil {
-			fmt.Printf("Error unmarshalling payload %s", payload.Message)
+			fmt.Printf("Error unmarshalling payload %s", snsnotif.Message)
 			return nil, err
 		}
 		messages[i] = model.Message{

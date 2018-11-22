@@ -13,18 +13,22 @@ const (
 	LOCAL      = "local"
 	DEVELOP    = "develop"
 	STAGE      = "stage"
-	PRODUCTION = "production"
+	PRODUCTION = "prod"
 )
 
 var Config *viper.Viper
 var currentEnv string
 
 func init() {
+	Init()
+}
+
+func Init() {
 	Config = viper.New()
 	Config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	Config.AutomaticEnv()
 
-	if environment, ok := os.LookupEnv("GO_ENVIRONMENT"); !ok {
+	if environment, ok := os.LookupEnv("GO_ENVIRONMENT"); !ok || environment == "" {
 		currentEnv = DEVELOP
 	} else {
 		currentEnv = environment
@@ -34,7 +38,7 @@ func init() {
 	Config.SetConfigFile(gopath + "/src/github.com/wenance/wequeue-management_api/app/config/" + currentEnv + ".yml")
 	if currentEnv == LOCAL {
 		Config.Set("aws_credentials", credentials.NewStaticCredentials("foo", "bar", ""))
-	}	
+	}
 	err := Config.ReadInConfig()
 	if err != nil {
 		panic(fmt.Errorf("Fatal error config file: %#v", err))
@@ -44,6 +48,10 @@ func init() {
 
 func Get(key string) string {
 	return Config.GetString(key)
+}
+
+func GetBool(key string) bool {
+	return Config.GetBool(key)
 }
 
 func GetObject(key string) interface{} {
