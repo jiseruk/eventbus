@@ -27,10 +27,10 @@ type SubscriptionController struct {
 func (t SubscriptionController) Create(c *gin.Context) {
 	var json model.Subscriber
 	if err := c.ShouldBindJSON(&json); err != nil {
-		c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "json_error", err.Error()))
+		c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "validation_error", err.Error()))
 		return
 	}
-	
+
 	subscriber, err := service.SubscriptionsService.CreateSubscription(json.Name, json.Endpoint, json.Topic, json.Type, json.VisibilityTimeout)
 	if err != nil {
 		c.JSON(err.Status, err)
@@ -55,7 +55,7 @@ func (t SubscriptionController) Create(c *gin.Context) {
 func (t SubscriptionController) Consume(c *gin.Context) {
 	var consumeReq model.ConsumerRequest
 	if err := c.ShouldBindQuery(&consumeReq); err != nil {
-		c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "json_error", err.Error()))
+		c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "validation_error", err.Error()))
 		return
 	}
 	fmt.Print(consumeReq)
@@ -81,7 +81,7 @@ func (t SubscriptionController) Consume(c *gin.Context) {
 func (t SubscriptionController) DeleteMessages(c *gin.Context) {
 	var deleteReq model.DeleteDeadLetterQueueMessagesRequest
 	if err := c.ShouldBindJSON(&deleteReq); err != nil {
-		c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "json_error", err.Error()))
+		c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "validation_error", err.Error()))
 		return
 	}
 	messages, err := service.SubscriptionsService.DeleteMessages(deleteReq.Subscriber, deleteReq.Messages)

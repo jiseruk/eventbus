@@ -62,7 +62,7 @@ func TestPublishMessage(t *testing.T) {
 		rec := executeMockedRequest(router, "POST", "/messages", `{"topic": "topic", "payload":"message"}`)
 
 		assert.JSONEq(t,
-			`{"message": "payload: it should be a valid json object.", "status": 400, "code": "json_error"}`,
+			`{"message": "payload: it should be a valid json object.", "status": 400, "code": "validation_error"}`,
 			rec.Body.String())
 		assert.Equal(t, 400, rec.Code)
 

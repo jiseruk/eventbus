@@ -29,7 +29,7 @@ var EngineService client.EngineService
 func (t TopicController) Create(c *gin.Context) {
 	var json model.Topic
 	if err := c.ShouldBindJSON(&json); err != nil {
-		c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "json_error", err.Error()))
+		c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "validation_error", err.Error()))
 		return
 	}
 	engine := client.GetEngineService(json.Engine)

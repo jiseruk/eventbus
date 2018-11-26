@@ -281,7 +281,7 @@ func TestCreateSubscription(t *testing.T) {
 		t.Run("it should fail create the subscriber if the json fields are invalid ["+r.err+"]", func(t *testing.T) {
 
 			res := executeMockedRequest(router, "POST", "/subscribers", r.body)
-			assert.Contains(t, res.Body.String(), `"code":"json_error"`)
+			assert.Contains(t, res.Body.String(), `"code":"validation_error"`)
 			assert.Equal(t, 400, res.Code, res.Body.String())
 		})
 	}

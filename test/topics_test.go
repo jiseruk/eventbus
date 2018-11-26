@@ -161,7 +161,7 @@ func TestCreateTopic(t *testing.T) {
 		t.Run("it should fail create the topic if the json fields are invalid", func(t *testing.T) {
 
 			res := executeMockedRequest(router, "POST", "/topics", r.body)
-			assert.Contains(t, res.Body.String(), `"code":"json_error"`)
+			assert.Contains(t, res.Body.String(), `"code":"validation_error"`)
 			assert.Equal(t, 400, res.Code, res.Body.String())
 		})
 	}

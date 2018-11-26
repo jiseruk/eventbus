@@ -28,7 +28,7 @@ func (t PublisherController) Publish(c *gin.Context) {
 	var message model.PublishMessage
 	if err := c.ShouldBindJSON(&message); err != nil {
 		if e, ok := err.(validation.Errors); ok {
-			c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "json_error", e.Error()))
+			c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "validation_error", e.Error()))
 			return
 		}
 		c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "json_error", "The request body is not a valid json"))
