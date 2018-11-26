@@ -146,8 +146,32 @@ type deleteError struct {
 }
 
 type ConsumerRequest struct {
-	MaxMessages int64  `form:"max_messages" binding:"required,max=10,min=1"`
-	Subscriber  string `form:"subscriber" binding:"required"`
+	MaxMessages int64  `form:"max_messages"`
+	Subscriber  string `form:"subscriber"`
+}
+
+func (c ConsumerRequest) Validate() error {
+	return validation.Errors{
+		"max_messages": validation.Validate(
+			&c.MaxMessages,
+			validation.Required.Error(errors.ErrorFieldRequired),
+			validation.Min(1), validation.Max(10),
+		),
+		"subscriber": validation.Validate(
+			&c.Subscriber,
+			validation.Required.Error(errors.ErrorFieldRequired),
+		),
+	}.Filter()
+	/*return validation.ValidateStruct(
+		&c,
+		validation.Field(&c.MaxMessages,
+			validation.Required.Error(errors.ErrorFieldRequired),
+			validation.Min(1), validation.Max(10),
+		),
+		validation.Field(&c.Subscriber,
+			validation.Required.Error(errors.ErrorFieldRequired),
+		),
+	)*/
 }
 
 type DeleteDeadLetterQueueMessagesRequest struct {
