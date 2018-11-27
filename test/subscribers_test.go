@@ -309,12 +309,16 @@ func TestCreateSubscription(t *testing.T) {
 			return *input.Key["name"].S == subscriber.Name && *input.TableName == "Subscribers"
 		})).Return(&dynamodb.GetItemOutput{Item: nil}, nil).Once()
 
-		mockSQS.On("CreateQueue", &sqs.CreateQueueInput{QueueName: aws.String("pull_subscriber_subs"),
+		mockSQS.On("CreateQueue", &sqs.CreateQueueInput{QueueName: aws.String(client.AWS_RESOURCE_PREFIX + "pull-queue-subs"),
 			Attributes: map[string]*string{"VisibilityTimeout": aws.String("10")},
 		}).Return(nil, errors.New("Create Queue error")).Once()
 
 		rec := executeMockedRequest(router, "POST", "/subscribers", `{"topic": "topic", "name":"subs", "visibility_timeout":10, "type":"pull"}`)
 		assert.Equal(t, 500, rec.Code)
+		topicServiceMock.AssertExpectations(t)
+		mockDynamo.AssertExpectations(t)
+		mockSQS.AssertExpectations(t)
+
 	})
 }
 
