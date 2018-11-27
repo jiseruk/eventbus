@@ -30,6 +30,8 @@ var lambdaEndpoint = config.Get("engines.AWS.lambda.endpoint")
 var kinesisEndpoint = config.Get("engines.AWS.kinesis.endpoint")
 var sqsEndpoint = config.Get("engines.AWS.sqs.endpoint")
 
+const AWS_RESOURCE_PREFIX = "wequeue-"
+
 type PolicyDocument struct {
 	Version   string
 	Id        string
@@ -131,8 +133,7 @@ func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI, kinesisiface.KinesisA
 	)
 
 	lambdaClient := lambda.New(sess, aws.NewConfig().
-		WithEndpointResolver(endpoints.ResolverFunc(myCustomResolver)).
-		WithLogLevel(aws.LogDebugWithHTTPBody),
+		WithEndpointResolver(endpoints.ResolverFunc(myCustomResolver)),
 	)
 
 	kinesisClient := kinesis.New(sess, aws.NewConfig().
@@ -148,7 +149,7 @@ func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI, kinesisiface.KinesisA
 //CreateTopic creates a topic in AWS SNS.
 //It returns the topic Arn and any error encountered
 func (azn *AWSEngine) CreateTopic(name string) (*CreateTopicOutput, error) {
-	var input = &sns.CreateTopicInput{Name: &name}
+	var input = &sns.CreateTopicInput{Name: aws.String(AWS_RESOURCE_PREFIX + name)}
 	snsoutput, err := azn.SNSClient.CreateTopic(input)
 	if err != nil {
 		fmt.Printf("Error: %#v", err)
@@ -181,7 +182,7 @@ func (azn AWSEngine) Publish(topicResourceID string, message *model.PublishMessa
 //CreateSubscriber creates a sns subscriber, that basically is a Lambda Function which receives the push notification and
 //makes the HTTP POST to the subscriber's endpoint
 func (azn AWSEngine) CreatePushSubscriber(topic model.Topic, subscriber string, endpoint string) (*SubscriberOutput, error) {
-	qoutput, err := azn.SQSClient.CreateQueue(&sqs.CreateQueueInput{QueueName: aws.String("dlq_lambda_" + subscriber)})
+	qoutput, err := azn.SQSClient.CreateQueue(&sqs.CreateQueueInput{QueueName: aws.String(AWS_RESOURCE_PREFIX + "dead-letter-" + subscriber)})
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +195,7 @@ func (azn AWSEngine) CreatePushSubscriber(topic model.Topic, subscriber string, 
 
 	lambdaConf, err := createLambdaSubscriber(azn.LambdaClient, topic.Name, subscriber,
 		endpoint, "subscriber.handler", "python2.7", "/tmp/function.zip",
-		&DeadLetterQueueInput{QueueName: aws.String("dlq_lambda_" + subscriber), QueueArn: qattrs.Attributes["QueueArn"]})
+		&DeadLetterQueueInput{QueueName: aws.String(AWS_RESOURCE_PREFIX + "dead-letter-" + subscriber), QueueArn: qattrs.Attributes["QueueArn"]})
 
 	if err != nil {
 		return nil, err
@@ -212,10 +213,10 @@ func (azn AWSEngine) CreatePushSubscriber(topic model.Topic, subscriber string, 
 	if config.GetBool("engines.AWS.lambda.createPolicy") {
 		_, err = azn.LambdaClient.AddPermission(&lambda.AddPermissionInput{
 			Action:       aws.String("lambda:InvokeFunction"),
-			FunctionName: aws.String("lambda_subscriber_" + subscriber),
+			FunctionName: aws.String(AWS_RESOURCE_PREFIX + "lambda-" + subscriber),
 			Principal:    aws.String("sns.amazonaws.com"),
 			SourceArn:    &topic.ResourceID,
-			StatementId:  aws.String("lambda_subscriber_" + subscriber),
+			StatementId:  aws.String(AWS_RESOURCE_PREFIX + "lambda-policy-" + subscriber),
 		})
 
 		if err != nil {
@@ -228,7 +229,7 @@ func (azn AWSEngine) CreatePushSubscriber(topic model.Topic, subscriber string, 
 
 func (azn AWSEngine) CreatePullSubscriber(topic model.Topic, subscriber string, visibilityTimeout int) (*SubscriberOutput, error) {
 	qoutput, err := azn.SQSClient.CreateQueue(&sqs.CreateQueueInput{
-		QueueName: aws.String("pull_subscriber_" + subscriber),
+		QueueName: aws.String(AWS_RESOURCE_PREFIX + "pull-queue-" + subscriber),
 		Attributes: map[string]*string{
 			"VisibilityTimeout": aws.String(strconv.Itoa(visibilityTimeout)),
 		},
@@ -255,7 +256,7 @@ func (azn AWSEngine) CreatePullSubscriber(topic model.Topic, subscriber string, 
 	_, err = azn.SQSClient.SetQueueAttributes(&sqs.SetQueueAttributesInput{
 		QueueUrl: qoutput.QueueUrl,
 		Attributes: map[string]*string{
-			"Policy": getPolicy(topic.ResourceID, *qattrs.Attributes["QueueArn"], "pull_subscriber_"+subscriber),
+			"Policy": getPolicy(topic.ResourceID, *qattrs.Attributes["QueueArn"], AWS_RESOURCE_PREFIX+"pull-queue-policy-"+subscriber),
 		},
 	})
 	if err != nil {
@@ -328,11 +329,12 @@ func createLambdaSubscriber(client lambdaiface.LambdaAPI, topic string, subscrib
 
 	createArgs := &lambda.CreateFunctionInput{
 		Code:         createCode,
-		FunctionName: aws.String("lambda_subscriber_" + subscriber),
+		FunctionName: aws.String(AWS_RESOURCE_PREFIX + "lambda-" + subscriber),
 		Handler:      &handler,
 		Role:         aws.String(config.Get("engines.AWS.lambda.executionRole")),
 		Runtime:      &runtime,
 		Environment:  &environment,
+		Tags:         map[string]*string{"project": aws.String("wequeue")},
 	}
 	if deadLetterQueueInfo != nil {
 		createArgs.DeadLetterConfig = &lambda.DeadLetterConfig{TargetArn: deadLetterQueueInfo.QueueArn}
