@@ -78,6 +78,7 @@ type SNSNotification struct {
 	Signature        string
 	SigningCertURL   string
 	UnsubscribeURL   string
+	Timestamp        string
 }
 
 func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI, kinesisiface.KinesisAPI, sqsiface.SQSAPI) {
