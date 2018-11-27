@@ -108,10 +108,7 @@ func TestCreateTopic(t *testing.T) {
 			TableName: aws.String("Topics"),
 		}).Return(nil, errors.New("Dynamodb error")).Once()
 
-		//mockDAO.On("GetTopic", topic).Return(nil, nil).Once()
 		mockSNS.On("CreateTopic", &sns.CreateTopicInput{Name: &topic}).Return(&sns.CreateTopicOutput{TopicArn: &resource}, nil).Once()
-		//mockDAO.On("CreateTopic", topic, "AWS", resource).Return(nil, errors.New("database error")).Once()
-		mockSNS.On("DeleteTopic", &sns.DeleteTopicInput{TopicArn: &resource}).Return(&sns.DeleteTopicOutput{}, nil).Once()
 
 		rec := httptest.NewRecorder()
 		req, _ := http.NewRequest("POST", "/topics", strings.NewReader(`{"name": "topic", "engine": "AWS"}`))
@@ -169,32 +166,35 @@ func TestCreateTopic(t *testing.T) {
 }
 
 func TestGetTopic(t *testing.T) {
-	mockDAO := &TopicsDaoMock{}
-	service.TopicsService = service.TopicServiceImpl{Dao: mockDAO}
+	//mockDAO := &TopicsDaoMock{}
+	mockDynamo := &DynamoDBAPIMock{}
+	service.TopicsService = service.TopicServiceImpl{Dao: &model.TopicsDaoDynamoImpl{DynamoClient: mockDynamo}}
+	//service.TopicsService = service.TopicServiceImpl{Dao: mockDAO}
 	router := server.GetRouter()
 	topic := &model.Topic{Name: "topic", Engine: "AWS"}
+	topicItem, _ := dynamodbattribute.MarshalMap(topic)
 	topicJSON, _ := json.Marshal(&topic)
 
 	t.Run("It should return the topic", func(t *testing.T) {
-		mockDAO.On("GetTopic", "topic").
-			Return(topic, nil).
-			Once()
+		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
+			return *input.Key["name"].S == topic.Name && *input.TableName == "Topics"
+		})).Return(&dynamodb.GetItemOutput{Item: topicItem}, nil).Once()
 
 		res := executeMockedRequest(router, "GET", "/topics/topic", "")
 		assert.JSONEq(t, res.Body.String(), string(topicJSON))
 		assert.Equal(t, 200, res.Code)
-		mockDAO.AssertExpectations(t)
+		mockDynamo.AssertExpectations(t)
 	})
 
 	t.Run("It should fail returning the topic when a database error happend", func(t *testing.T) {
-		mockDAO.On("GetTopic", "topic").
-			Return(nil, errors.New("Database error")).
-			Once()
+		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
+			return *input.Key["name"].S == topic.Name && *input.TableName == "Topics"
+		})).Return(&dynamodb.GetItemOutput{Item: nil}, errors.New("Dynamo DB error")).Once()
 
 		res := executeMockedRequest(router, "GET", "/topics/topic", "")
-		assert.JSONEq(t, res.Body.String(), `{"status":500,"code":"database_error","message":"Database error"}`)
+		assert.JSONEq(t, res.Body.String(), `{"status":500,"code":"database_error","message":"Dynamo DB error"}`)
 		assert.Equal(t, 500, res.Code)
-		mockDAO.AssertExpectations(t)
+		mockDynamo.AssertExpectations(t)
 	})
 
 	for _, path := range []string{"/topics/", "/topics"} {

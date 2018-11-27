@@ -3,7 +3,6 @@ package client
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -36,7 +35,7 @@ func CheckEndpoint(url *string) (bool, error) {
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
-	fmt.Printf("BODY endpoint %s", string(body))
+
 	if err != nil {
 		return false, err
 	}

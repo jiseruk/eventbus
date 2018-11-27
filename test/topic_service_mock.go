@@ -1,7 +1,7 @@
 package test
 
-import errors "github.com/wenance/wequeue-management_api/app/errors"
 import client "github.com/wenance/wequeue-management_api/app/client"
+import errors "github.com/wenance/wequeue-management_api/app/errors"
 import mock "github.com/stretchr/testify/mock"
 import model "github.com/wenance/wequeue-management_api/app/model"
 
