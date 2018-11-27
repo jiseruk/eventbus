@@ -15,6 +15,6 @@ ADD https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.s
 RUN chmod +x ./wait-for-it.sh
 RUN bundle install
 
-CMD ["./wait-for-it.sh", "localstack:4565", "--", "cucumber"]
+CMD ["./wait-for-it.sh", "localstack:4565", "wequeue:8080", "--", "cucumber"]
 
 # 
