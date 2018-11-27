@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	lambda "github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/gin-gonic/gin"
+	"github.com/wenance/wequeue-management_api/app/client"
 	"github.com/wenance/wequeue-management_api/app/config"
 	"github.com/wenance/wequeue-management_api/app/model"
 )
@@ -33,17 +34,18 @@ func getLambdaMock(endpoint string, subscriber string, topic string, dlqArn stri
 	environment := lambda.Environment{Variables: make(map[string]*string)}
 	environment.Variables["subscriber_url"] = &endpoint
 	environment.Variables["topic"] = &topic
-	environment.Variables["queue_name"] = aws.String("dlq_lambda_" + subscriber)
+	environment.Variables["queue_name"] = aws.String(client.AWS_RESOURCE_PREFIX + "dead-letter-" + subscriber)
 	environment.Variables["environment"] = config.GetCurrentEnvironment()
 
 	createArgs := &lambda.CreateFunctionInput{
 		Code:             createCode,
-		FunctionName:     aws.String("lambda_subscriber_" + subscriber),
+		FunctionName:     aws.String(client.AWS_RESOURCE_PREFIX + "lambda-" + subscriber),
 		Handler:          aws.String("subscriber.handler"),
 		Role:             aws.String(config.Get("engines.AWS.lambda.executionRole")),
 		Runtime:          aws.String("python2.7"),
 		Environment:      &environment,
 		DeadLetterConfig: &lambda.DeadLetterConfig{TargetArn: &dlqArn},
+		Tags:         map[string]*string{"project": aws.String("wequeue")},
 	}
 	return createArgs
 }

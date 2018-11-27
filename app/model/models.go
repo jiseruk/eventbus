@@ -33,7 +33,8 @@ type Topic struct {
 func (t Topic) Validate() error {
 	return validation.ValidateStruct(
 		&t,
-		validation.Field(&t.Name, validation.Required.Error(errors.ErrorFieldRequired)),
+		validation.Field(&t.Name, validation.Required.Error(errors.ErrorFieldRequired),
+			validation.Length(1, 50)),
 		validation.Field(&t.Engine, validation.Required.Error(errors.ErrorFieldRequired),
 			validation.In("AWS", "AWSStream").Error(errors.GetInListError("AWS", "AWSStream"))),
 	)

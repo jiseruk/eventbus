@@ -86,13 +86,14 @@ func TestCreateSubscription(t *testing.T) {
 				Protocol: aws.String("lambda")}).
 			Return(&sns.SubscribeOutput{SubscriptionArn: aws.String("arn:subs")}, nil).Once()
 
-		mockSQS.On("CreateQueue", &sqs.CreateQueueInput{QueueName: aws.String("dlq_lambda_subs")}).
+		mockSQS.On("CreateQueue", &sqs.CreateQueueInput{QueueName: aws.String(client.AWS_RESOURCE_PREFIX + "dead-letter-subs")}).
 			Return(&sqs.CreateQueueOutput{QueueUrl: aws.String("queueUrl")}, nil).Once()
 		mockSQS.On("GetQueueAttributes", &sqs.GetQueueAttributesInput{QueueUrl: aws.String("queueUrl"), AttributeNames: []*string{aws.String("QueueArn")}}).
 			Return(&sqs.GetQueueAttributesOutput{Attributes: map[string]*string{"QueueArn": aws.String("queue:subs")}}, nil).Once()
 
 		mockLambda.On("AddPermission", mock.MatchedBy(func(input *lambda.AddPermissionInput) bool {
-			return true
+			return *input.FunctionName == client.AWS_RESOURCE_PREFIX+"lambda-subs" &&
+				*input.StatementId == client.AWS_RESOURCE_PREFIX+"lambda-policy-subs"
 		})).Return(&lambda.AddPermissionOutput{}, nil).Once()
 		//Finnaly, The subscriber is created in the database
 		mockDynamo.On("PutItem", &dynamodb.PutItemInput{
@@ -143,7 +144,7 @@ func TestCreateSubscription(t *testing.T) {
 		})).Return(&dynamodb.GetItemOutput{Item: nil}, nil).Once()
 		//mockDAO.On("GetSubscription", "subs").Return(nil, nil).Once()
 
-		mockSQS.On("CreateQueue", &sqs.CreateQueueInput{QueueName: aws.String("pull_subscriber_subs"),
+		mockSQS.On("CreateQueue", &sqs.CreateQueueInput{QueueName: aws.String(client.AWS_RESOURCE_PREFIX + "pull-queue-subs"),
 			Attributes: map[string]*string{"VisibilityTimeout": aws.String("10")},
 		}).Return(&sqs.CreateQueueOutput{QueueUrl: aws.String("queueUrl")}, nil).Once()
 		mockSQS.On("GetQueueAttributes", &sqs.GetQueueAttributesInput{QueueUrl: aws.String("queueUrl"), AttributeNames: []*string{aws.String("QueueArn")}}).
