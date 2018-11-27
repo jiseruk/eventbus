@@ -68,10 +68,14 @@ type SNSObject struct {
 }
 
 type SNSNotification struct {
-	Message   string `json:"Message"`
-	MessageId string `json:"MessageId"`
-	TopicArn  string `json:"TopicArn"`
-	Type      string `json:"Type"`
+	Message          string
+	MessageId        string
+	TopicArn         string
+	Type             string
+	SignatureVersion string
+	Signature        string
+	SigningCertURL   string
+	UnsubscribeURL   string
 }
 
 func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI, kinesisiface.KinesisAPI, sqsiface.SQSAPI) {

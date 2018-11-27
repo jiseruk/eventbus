@@ -342,7 +342,7 @@ func TestConsumeQueueMessages(t *testing.T) {
 			},
 			queueType: "queue",
 			queueURL:  "queue",
-			body: aws.String(fmt.Sprintf(`{"Message":"{\"payload\":%s,\"timestamp\":%d,\"topic\":\"topic\"}","MessageId":"1","Type":"Notification","TopicArn":"arn:topic"}`,
+			body: aws.String(fmt.Sprintf(`{"Message":"{\"payload\":%s,\"timestamp\":%d,\"topic\":\"topic\"}","MessageId":"1","Type":"Notification","TopicArn":"arn:topic","SignatureVersion":"1"}`,
 				`{\"hola\":\"lala\"}`, model.Clock.Now().UnixNano())),
 		},
 	} {
