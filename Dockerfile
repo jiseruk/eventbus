@@ -25,6 +25,7 @@ RUN apk add --no-cache curl bash jq
 ENV GOPATH /go
 WORKDIR /go/src/github.com/wenance/wequeue-management_api 
 COPY bin/entrypoint-vault.sh /entrypoint/
+RUN chmod +x /entrypoint/entrypoint-vault.sh
 COPY --from=tests /etc/ssl/certs /etc/ssl/certs
 COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/main /go/src/github.com/wenance/wequeue-management_api/main 
 COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/lambda /go/src/github.com/wenance/wequeue-management_api/lambda
