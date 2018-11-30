@@ -37,7 +37,7 @@ func TestCreateTopic(t *testing.T) {
 	t.Run("It should create the topic in AWS and the DB entity", func(t *testing.T) {
 		client.EnginesMap["AWS"] = &client.AWSEngine{SNSClient: mockSNS}
 		service.TopicsService = service.TopicServiceImpl{Dao: &model.TopicsDaoDynamoImpl{DynamoClient: mockDynamo}}
-		mockSNS.On("CreateTopic", &sns.CreateTopicInput{Name: aws.String(client.AWS_RESOURCE_PREFIX + topic)}).
+		mockSNS.On("CreateTopic", &sns.CreateTopicInput{Name: aws.String(client.GetAWSResourcePrefix() + topic)}).
 			Return(&sns.CreateTopicOutput{TopicArn: &resource}, nil).Once()
 
 		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
@@ -108,7 +108,7 @@ func TestCreateTopic(t *testing.T) {
 			TableName: aws.String("Topics"),
 		}).Return(nil, errors.New("Dynamodb error")).Once()
 
-		mockSNS.On("CreateTopic", &sns.CreateTopicInput{Name: aws.String(client.AWS_RESOURCE_PREFIX + topic)}).
+		mockSNS.On("CreateTopic", &sns.CreateTopicInput{Name: aws.String(client.GetAWSResourcePrefix() + topic)}).
 			Return(&sns.CreateTopicOutput{TopicArn: &resource}, nil).Once()
 
 		rec := httptest.NewRecorder()
@@ -130,7 +130,7 @@ func TestCreateTopic(t *testing.T) {
 			return *input.Key["name"].S == topic && *input.TableName == "Topics"
 		})).Return(&dynamodb.GetItemOutput{Item: nil}, nil).Once()
 
-		mockSNS.On("CreateTopic", &sns.CreateTopicInput{Name: aws.String(client.AWS_RESOURCE_PREFIX + topic)}).
+		mockSNS.On("CreateTopic", &sns.CreateTopicInput{Name: aws.String(client.GetAWSResourcePrefix() + topic)}).
 			Return(nil, errors.New("engine error")).Once()
 
 		rec := httptest.NewRecorder()

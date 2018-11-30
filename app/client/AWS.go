@@ -150,7 +150,7 @@ func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI, kinesisiface.KinesisA
 //CreateTopic creates a topic in AWS SNS.
 //It returns the topic Arn and any error encountered
 func (azn *AWSEngine) CreateTopic(name string) (*CreateTopicOutput, error) {
-	var input = &sns.CreateTopicInput{Name: aws.String(AWS_RESOURCE_PREFIX + name)}
+	var input = &sns.CreateTopicInput{Name: aws.String(GetAWSResourcePrefix() + name)}
 	snsoutput, err := azn.SNSClient.CreateTopic(input)
 	if err != nil {
 		fmt.Printf("Error: %#v", err)
@@ -183,7 +183,7 @@ func (azn AWSEngine) Publish(topicResourceID string, message *model.PublishMessa
 //CreateSubscriber creates a sns subscriber, that basically is a Lambda Function which receives the push notification and
 //makes the HTTP POST to the subscriber's endpoint
 func (azn AWSEngine) CreatePushSubscriber(topic model.Topic, subscriber string, endpoint string) (*SubscriberOutput, error) {
-	qoutput, err := azn.SQSClient.CreateQueue(&sqs.CreateQueueInput{QueueName: aws.String(AWS_RESOURCE_PREFIX + "dead-letter-" + subscriber)})
+	qoutput, err := azn.SQSClient.CreateQueue(&sqs.CreateQueueInput{QueueName: aws.String(GetAWSResourcePrefix() + "dead-letter-" + subscriber)})
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +196,7 @@ func (azn AWSEngine) CreatePushSubscriber(topic model.Topic, subscriber string, 
 
 	lambdaConf, err := createLambdaSubscriber(azn.LambdaClient, topic.Name, subscriber,
 		endpoint, "subscriber.handler", "python2.7", "/tmp/function.zip",
-		&DeadLetterQueueInput{QueueName: aws.String(AWS_RESOURCE_PREFIX + "dead-letter-" + subscriber), QueueArn: qattrs.Attributes["QueueArn"]})
+		&DeadLetterQueueInput{QueueName: aws.String(GetAWSResourcePrefix() + "dead-letter-" + subscriber), QueueArn: qattrs.Attributes["QueueArn"]})
 
 	if err != nil {
 		return nil, err
@@ -214,10 +214,10 @@ func (azn AWSEngine) CreatePushSubscriber(topic model.Topic, subscriber string, 
 	if config.GetBool("engines.AWS.lambda.createPolicy") {
 		_, err = azn.LambdaClient.AddPermission(&lambda.AddPermissionInput{
 			Action:       aws.String("lambda:InvokeFunction"),
-			FunctionName: aws.String(AWS_RESOURCE_PREFIX + "lambda-" + subscriber),
+			FunctionName: aws.String(GetAWSResourcePrefix() + "lambda-" + subscriber),
 			Principal:    aws.String("sns.amazonaws.com"),
 			SourceArn:    &topic.ResourceID,
-			StatementId:  aws.String(AWS_RESOURCE_PREFIX + "lambda-policy-" + subscriber),
+			StatementId:  aws.String(GetAWSResourcePrefix() + "lambda-policy-" + subscriber),
 		})
 
 		if err != nil {
@@ -230,7 +230,7 @@ func (azn AWSEngine) CreatePushSubscriber(topic model.Topic, subscriber string, 
 
 func (azn AWSEngine) CreatePullSubscriber(topic model.Topic, subscriber string, visibilityTimeout int) (*SubscriberOutput, error) {
 	qoutput, err := azn.SQSClient.CreateQueue(&sqs.CreateQueueInput{
-		QueueName: aws.String(AWS_RESOURCE_PREFIX + "pull-queue-" + subscriber),
+		QueueName: aws.String(GetAWSResourcePrefix() + "pull-queue-" + subscriber),
 		Attributes: map[string]*string{
 			"VisibilityTimeout": aws.String(strconv.Itoa(visibilityTimeout)),
 		},
@@ -257,7 +257,7 @@ func (azn AWSEngine) CreatePullSubscriber(topic model.Topic, subscriber string, 
 	_, err = azn.SQSClient.SetQueueAttributes(&sqs.SetQueueAttributesInput{
 		QueueUrl: qoutput.QueueUrl,
 		Attributes: map[string]*string{
-			"Policy": getPolicy(topic.ResourceID, *qattrs.Attributes["QueueArn"], AWS_RESOURCE_PREFIX+"pull-queue-policy-"+subscriber),
+			"Policy": getPolicy(topic.ResourceID, *qattrs.Attributes["QueueArn"], GetAWSResourcePrefix()+"pull-queue-policy-"+subscriber),
 		},
 	})
 	if err != nil {
@@ -330,7 +330,7 @@ func createLambdaSubscriber(client lambdaiface.LambdaAPI, topic string, subscrib
 
 	createArgs := &lambda.CreateFunctionInput{
 		Code:         createCode,
-		FunctionName: aws.String(AWS_RESOURCE_PREFIX + "lambda-" + subscriber),
+		FunctionName: aws.String(GetAWSResourcePrefix() + "lambda-" + subscriber),
 		Handler:      &handler,
 		Role:         aws.String(config.Get("engines.AWS.lambda.executionRole")),
 		Runtime:      &runtime,
@@ -393,6 +393,10 @@ func getPolicy(snsTopicArn string, sqsArn string, sqsName string) *string {
 		return nil
 	}
 	return aws.String(string(b))
+}
+
+func GetAWSResourcePrefix() string {
+	return AWS_RESOURCE_PREFIX + *config.GetCurrentEnvironment() + "-"
 }
 
 /*
