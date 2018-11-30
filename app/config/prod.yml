@@ -1,0 +1,14 @@
+engines:
+  AWS:
+    region: us-east-1
+    lambda:
+      executionRole: 
+      zipDir: /go/src/github.com/wenance/wequeue-management_api/lambda/
+      createPolicy: true
+
+database:
+  mysql:
+    user: root
+    password: root
+    database: wequeue
+    host: mysql
