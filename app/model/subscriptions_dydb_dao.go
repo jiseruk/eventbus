@@ -5,9 +5,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+	"github.com/wenance/wequeue-management_api/app/config"
 )
 
-var subscribersTable = "Subscribers"
+var subscribersTable = config.Get("databases.dynamodb.tables.Subscribers")
 
 type SubscriberDaoDynamoImpl struct {
 	DynamoClient dynamodbiface.DynamoDBAPI

@@ -6,7 +6,12 @@ engines:
       zipDir: /go/src/github.com/wenance/wequeue-management_api/lambda/
       createPolicy: true
 
-database:
+databases:
+  dynamodb:
+    tables:
+      topics: TopicsStage
+      subscribers: SubscribersStage
+
   mysql:
     user: root
     password: root

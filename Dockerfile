@@ -23,6 +23,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 FROM alpine:latest
 RUN apk add --no-cache curl bash jq
 ENV GOPATH /go
+ENV GIN_MODE release
 WORKDIR /go/src/github.com/wenance/wequeue-management_api 
 COPY bin/entrypoint-vault.sh /entrypoint/
 RUN chmod +x /entrypoint/entrypoint-vault.sh

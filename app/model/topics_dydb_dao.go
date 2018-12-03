@@ -5,9 +5,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+	"github.com/wenance/wequeue-management_api/app/config"
 )
 
-var topicsTable = "Topics"
+var topicsTable = config.Get("databases.dynamodb.tables.Topics")
 
 type TopicsDaoDynamoImpl struct {
 	DynamoClient dynamodbiface.DynamoDBAPI
