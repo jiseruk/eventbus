@@ -41,6 +41,5 @@ func Init() {
 		},
 	}
 	service.PublishersService = service.PublisherServiceImpl{}
-
 	r.Run(":8080")
 }
