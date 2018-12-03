@@ -11,7 +11,7 @@ import (
 
 const (
 	LOCAL      = "local"
-	DEVELOP    = "develop"
+	DEVELOP    = "dev"
 	STAGE      = "stage"
 	PRODUCTION = "prod"
 )
