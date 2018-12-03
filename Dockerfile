@@ -31,7 +31,7 @@ COPY --from=tests /etc/ssl/certs /etc/ssl/certs
 COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/main /go/src/github.com/wenance/wequeue-management_api/main 
 COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/lambda /go/src/github.com/wenance/wequeue-management_api/lambda
 COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/app/config/local.yml /go/src/github.com/wenance/wequeue-management_api/app/config/local.yml 
-COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/app/config/develop.yml /go/src/github.com/wenance/wequeue-management_api/app/config/dev.yml 
+COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/app/config/dev.yml /go/src/github.com/wenance/wequeue-management_api/app/config/dev.yml 
 COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/app/config/stage.yml /go/src/github.com/wenance/wequeue-management_api/app/config/stage.yml 
 COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/app/config/prod.yml /go/src/github.com/wenance/wequeue-management_api/app/config/prod.yml 
 ENTRYPOINT ["/entrypoint/entrypoint-vault.sh"]
