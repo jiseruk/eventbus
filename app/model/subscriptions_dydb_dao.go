@@ -8,7 +8,7 @@ import (
 	"github.com/wenance/wequeue-management_api/app/config"
 )
 
-var subscribersTable = config.Get("databases.dynamodb.tables.Subscribers")
+var subscribersTable = config.Get("databases.dynamodb.tables.subscribers")
 
 type SubscriberDaoDynamoImpl struct {
 	DynamoClient dynamodbiface.DynamoDBAPI
