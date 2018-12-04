@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
-
-	"github.com/wenance/wequeue-management_api/app/config"
+	_ "github.com/wenance/wequeue-management_api/app/config"
 	"github.com/wenance/wequeue-management_api/app/server"
 	_ "github.com/wenance/wequeue-management_api/app/validation"
 	_ "github.com/wenance/wequeue-management_api/docs"
@@ -19,5 +17,4 @@ import (
 // @contact.email javier.iseruk@wenance.com
 func main() {
 	server.Init()
-	fmt.Printf("Service ready, environment %s", *config.GetCurrentEnvironment())
 }

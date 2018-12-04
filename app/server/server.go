@@ -29,7 +29,6 @@ func Init() {
 	if err != nil {
 		log.Panic(err)
 	}*/
-	fmt.Printf("Creating Dynamo client...")
 	dynamo := model.GetClient()
 	//service.TopicsService = service.TopicServiceImpl{Db: db}
 	service.TopicsService = service.TopicServiceImpl{
@@ -43,7 +42,6 @@ func Init() {
 			DynamoClient: dynamo,
 		},
 	}
-	fmt.Printf("Dynamo client created")
 	service.PublishersService = service.PublisherServiceImpl{}
 	r.Run(":8080")
 }
