@@ -19,17 +19,22 @@ RUN cd test && go test -covermode=count -coverprofile=cover.out -coverpkg=../app
 #RUN bin/tests.sh
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main . 
 
-FROM busybox:musl
+#FROM busybox:musl
+FROM alpine:latest
+RUN apk add --no-cache curl bash jq
 ENV GOPATH /go
+ENV GIN_MODE release
 WORKDIR /go/src/github.com/wenance/wequeue-management_api 
+COPY bin/entrypoint-vault.sh /entrypoint/
+RUN chmod +x /entrypoint/entrypoint-vault.sh
 COPY --from=tests /etc/ssl/certs /etc/ssl/certs
 COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/main /go/src/github.com/wenance/wequeue-management_api/main 
 COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/lambda /go/src/github.com/wenance/wequeue-management_api/lambda
 COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/app/config/local.yml /go/src/github.com/wenance/wequeue-management_api/app/config/local.yml 
-COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/app/config/develop.yml /go/src/github.com/wenance/wequeue-management_api/app/config/develop.yml 
+COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/app/config/dev.yml /go/src/github.com/wenance/wequeue-management_api/app/config/dev.yml 
 COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/app/config/stage.yml /go/src/github.com/wenance/wequeue-management_api/app/config/stage.yml 
 COPY --from=tests /go/src/github.com/wenance/wequeue-management_api/app/config/prod.yml /go/src/github.com/wenance/wequeue-management_api/app/config/prod.yml 
-
+ENTRYPOINT ["/entrypoint/entrypoint-vault.sh"]
 CMD ["./main"]
 EXPOSE 8080 
 #CMD ["go", "run", "main.go"]

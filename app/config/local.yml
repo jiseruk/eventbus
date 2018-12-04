@@ -14,7 +14,12 @@ engines:
     dynamodb:
       endpoint: http://localstack:4569
 
-database:
+databases:
+  dynamodb:
+    tables:
+      topics: Topics
+      subscribers: Subscribers
+
   mysql:
     user: root
     password: root
