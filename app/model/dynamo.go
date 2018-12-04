@@ -40,7 +40,7 @@ func GetClient() dynamodbiface.DynamoDBAPI {
 		WithEndpoint(dynamoEndpoint),
 	)
 
-	if *config.GetCurrentEnvironment() == config.LOCAL || *config.GetCurrentEnvironment() == config.DEVELOP {
+	if *config.GetCurrentEnvironment() != config.PRODUCTION {
 		dynamoClient.CreateTable(&dynamodb.CreateTableInput{
 			TableName: aws.String(subscribersTable),
 			AttributeDefinitions: []*dynamodb.AttributeDefinition{
