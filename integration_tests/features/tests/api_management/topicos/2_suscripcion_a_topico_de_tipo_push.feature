@@ -13,7 +13,7 @@ Característica: Suscripción a tópico de tipo push
 # 		"topic" : "topic_name", 
 # 		"name" : "subscriber name",
 #     "type" : "push",
-# 		"endpoint" : "/host:port/something"
+#     "endpoint" : "/host:port/something"
 # 	}
 
 
@@ -25,29 +25,32 @@ Escenario: Suscripición exitosa a un topico en modo push
 
 Escenario: Suscripción a tópico inexistente
 	Cuando me suscribo en modo push a un tópico que no existe
-	Entonces debo obtener un status code 404
+	Entonces debo obtener un status code 400
 	Y debo obtener el mensaje de tópico inexistente
 
 Escenario: Suscripción sin datos
 	Dado un tópico existente
 	Cuando me suscribo en modo push al tópico sin pasar ningún dato
 	Entonces debo obtener un status code 400
-	Y debo obtener el mensaje de error 'Topic, subscriber and endpoint are required fields'
+	Y debo obtener el mensaje de error 'name: The field is required; topic: The field is required; type: The field is required.'
 
 Escenario: Suscripción sin indicar el nombre del tópico
-	Cuando intento suscribirme en modo push a un tópico sin pasar el nombre del suscriber
+	Dado un tópico existente
+	Cuando intento suscribirme en modo push a un tópico sin pasar el nombre del tópico
 	Entonces debo obtener un status code 400
-	Y debo obtener el mensaje de error 'Name cannot be null'
+	Y debo obtener el mensaje de error 'topic: The field is required.'
 
 Escenario: Suscripción sin indicar el nombre de suscriber
+	Dado un tópico existente
 	Cuando intento suscribirme en modo push a un tópico sin pasar el nombre del suscriber
 	Entonces debo obtener un status code 400
-	Y debo obtener el mensaje de error 'Subscriber cannot be null'
+	Y debo obtener el mensaje de error 'name: The field is required.'
 
 Escenario: Suscripción sin indicar el tipo de suscripcion
+	Dado un tópico existente
 	Cuando intento suscribirme a un tópico sin pasar el modo de suscripcion
 	Entonces debo obtener un status code 400
-	Y debo obtener el mensaje de error 'Subscription type is required'
+	Y debo obtener el mensaje de error 'type: The field is required.'
 
 Escenario: Suscripción de suscriber con nombre existente
 	Dado un tópico existente
@@ -55,6 +58,7 @@ Escenario: Suscripción de suscriber con nombre existente
 	Cuando intento suscribirme en modo push con el mismo nombre de suscriber
 	Entonces debo obtener el mensaje de error de suscriptor existente
 
+@EB-34 @bugs
 Escenario: Suscripción de suscriber con endpoint existente
 	Dado un tópico existente
 	Y un suscriber ya suscripto en modo push al tópico
@@ -71,17 +75,10 @@ Escenario: Suscripción sin indicar el endpoint para recibir las notificaciones
 	Dado un tópico existente
 	Cuando intento suscribirme en modo push a un tópico sin pasar el endpoint de notificaciones
 	Entonces debo obtener un status code 400
-	Y debo obtener el mensaje de error 'Endpoint cannot be null'
+	Y debo obtener el mensaje de error 'endpoint: The field is required.'
 
 Escenario: Suscripción indicando un endpoint sin formato de url
 	Dado un tópico existente
 	Cuando intento suscribirme en modo push a un tópico con el endpoint sin un formato válidop de url
 	Entonces debo obtener un status code 400
-	Y debo obtener el mensaje de error 'Endpoint must be a valid URL'
-
-Escenario: Uso del mismo endpoint para multiples tópicos
-	Dado tres tópicos diferentes
-	Cuando un subscriber se registra en modo push en todos los tópicos
-	Entonces todas las suscripciones deben resultar correctas
-
-
+	Y debo obtener el mensaje de error 'endpoint: must be a valid URL.'

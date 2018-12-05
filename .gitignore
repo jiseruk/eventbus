@@ -12,3 +12,5 @@
 *.out
 
 integration_tests/reports/test_report.html
+integration_tests/server.pid
+integration_tests/.byebug_history

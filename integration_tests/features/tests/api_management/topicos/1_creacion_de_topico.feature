@@ -8,7 +8,6 @@ Característica: Creación de tópicos
 # method: POST
 
 # endpoint: /topics
-
 # 	body = {
 # 		"topic": "topic_name", 
 # 		"engine":"AWS

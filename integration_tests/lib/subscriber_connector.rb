@@ -4,8 +4,8 @@ class SubscriberConnector
 
 	def initialize env = "localhost"
 		@host = (env == "docker") ? "subscriber" : "localhost"
-		puts "Using host for subscriber: #{@host}"
-		puts "events => #{last_event}"
+		puts "Using host for subscriber: #{@host}"  if $debug
+		puts "events => #{last_event}"  if $debug
 		self
 	end
 
@@ -15,7 +15,7 @@ class SubscriberConnector
 
 	def events
 		url = "http://#{@host}:9292" + "/events"
-		puts "Using url: #{url}"
+		puts "Using url: #{url}"  if $debug
 		response = HTTP.get url
 		response.parse
 	end
