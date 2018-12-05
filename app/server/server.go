@@ -32,6 +32,7 @@ func Init() {
 	service.TopicsService = service.TopicServiceImpl{
 		Dao: &model.TopicsDaoDynamoImpl{
 			DynamoClient: dynamo,
+			UUID:         model.UUIDImpl{},
 		},
 	}
 	//service.SubscriptionsService = service.SubscriptionServiceImpl{Dao: &model.SubscriberDaoImpl{Db: *db}}

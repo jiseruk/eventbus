@@ -8,6 +8,7 @@ import (
 	"github.com/go-ozzo/ozzo-validation/is"
 	"github.com/jinzhu/gorm"
 	"github.com/jonboulle/clockwork"
+	"github.com/satori/go.uuid"
 	"github.com/wenance/wequeue-management_api/app/errors"
 )
 
@@ -21,12 +22,13 @@ var Clock clockwork.Clock
 //Topic Model
 type Topic struct {
 	//gorm.Model
-	ID         uint      `gorm:"primary_key" json:"-"`
-	Name       string    `gorm:"not null;unique" json:"name" example:"topic_name"`
-	Engine     string    `json:"engine" example:"AWS"`
-	ResourceID string    `json:"resource_id"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"-"`
+	ID            uint      `gorm:"primary_key" json:"-"`
+	Name          string    `gorm:"not null;unique" json:"name" example:"topic_name"`
+	Engine        string    `json:"engine" example:"AWS"`
+	ResourceID    string    `json:"resource_id"`
+	SecurityToken string    `json:"security_token,omitempty"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"-"`
 	//DeletedAt *time.Time `sql:"index"`
 }
 
@@ -183,3 +185,16 @@ type DeleteDeadLetterQueueMessagesRequest struct {
 type DeleteDeadLetterQueueMessagesResponse struct {
 	Failed []Message `json:"failed"`
 }
+
+type UUID interface {
+	GetUUID() string
+}
+
+type UUIDImpl struct {
+}
+
+func (u UUIDImpl) GetUUID() string {
+	return uuid.NewV4().String()
+}
+
+

@@ -3,6 +3,7 @@ package test
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -46,7 +47,7 @@ func TestPublishMessage(t *testing.T) {
 				),
 			}).Return(&sns.PublishOutput{MessageId: aws.String("1")}, nil)
 
-			rec := executeMockedRequest(router, "POST", "/messages", fmt.Sprintf(`{"topic": "topic", "payload":%v}`, payload.payload))
+			rec := executeMockedRequest(router, "POST", "/messages", fmt.Sprintf(`{"topic": "topic", "payload":%v}`, payload.payload), "X-Publish-Token:uuid")
 
 			assert.JSONEq(t,
 				fmt.Sprintf(`{"timestamp": %d, "payload": %s, "topic":"topic"}`, model.Clock.Now().UnixNano(), payload.payload),
@@ -57,9 +58,17 @@ func TestPublishMessage(t *testing.T) {
 		})
 	}
 
+	t.Run("It should fail pblishing a message without the correct security token header", func(t *testing.T) {
+		rec := executeMockedRequest(router, "POST", "/messages", `{"topic": "topic", "payload":{"lala":"lala"}}`)
+		assert.Equal(t, http.StatusUnauthorized, rec.Code)
+
+		rec = executeMockedRequest(router, "POST", "/messages", `{"topic": "topic", "payload":{"lala":"lala"}}`, "X-Publish-Token:")
+		assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	})
+
 	t.Run("It should fail publishing a message if payload is not a json", func(t *testing.T) {
 
-		rec := executeMockedRequest(router, "POST", "/messages", `{"topic": "topic", "payload":"message"}`)
+		rec := executeMockedRequest(router, "POST", "/messages", `{"topic": "topic", "payload":"message"}`, "X-Publish-Token:uuid")
 
 		assert.JSONEq(t,
 			`{"message": "payload: it should be a valid json object.", "status": 400, "code": "validation_error"}`,
@@ -75,7 +84,7 @@ func TestPublishMessage(t *testing.T) {
 	} {
 		t.Run("It should fail publishing a message if the json is not valid", func(t *testing.T) {
 
-			rec := executeMockedRequest(router, "POST", "/messages", body)
+			rec := executeMockedRequest(router, "POST", "/messages", body, "X-Publish-Token:uuid")
 			assert.JSONEq(t,
 				`{"message": "The request body is not a valid json", "status": 400, "code": "json_error"}`,
 				rec.Body.String())
@@ -92,7 +101,7 @@ func TestPublishMessage(t *testing.T) {
 		var message = `{"message": "hola"}`
 
 		topicServiceMock.On("GetTopic", topic).Return(nil, nil).Once()
-		rec := executeMockedRequest(router, "POST", "/messages", fmt.Sprintf(`{"topic": "topic", "payload":%v}`, message))
+		rec := executeMockedRequest(router, "POST", "/messages", fmt.Sprintf(`{"topic": "topic", "payload":%v}`, message), "X-Publish-Token:uuid")
 
 		assert.JSONEq(t,
 			`{"message": "The topic topic doesn't exist", "status": 400, "code": "topic_not_exists"}`,
@@ -124,7 +133,7 @@ func TestPublishMessage(t *testing.T) {
 			),
 		}).Return(nil, errors.New("Publish error"))
 
-		rec := executeMockedRequest(router, "POST", "/messages", fmt.Sprintf(`{"topic": "topic", "payload":%v}`, message))
+		rec := executeMockedRequest(router, "POST", "/messages", fmt.Sprintf(`{"topic": "topic", "payload":%v}`, message), "X-Publish-Token:uuid")
 
 		assert.JSONEq(t,
 			`{"message": "Publish error", "status": 500, "code": "engine_error"}`,

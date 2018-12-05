@@ -54,15 +54,17 @@ func (t TopicController) Create(c *gin.Context) {
 // @Router /topics/{topic} [get]
 // @OperationId get-topic
 func (t TopicController) Get(c *gin.Context) {
+	adminToken := c.GetHeader("X-Admin-Token")
 	topicName := c.Param("topic")
 
-	topic, apierr := service.TopicsService.GetTopic(topicName)
+	topic, apierr := service.TopicsService.GetTopic(topicName, adminToken)
 	if apierr != nil {
 		c.JSON(apierr.Status, &apierr)
 		return
 	}
 	if topic == nil {
 		c.JSON(http.StatusNotFound, errors.NewAPIError(http.StatusNotFound, "database_error", "The topic "+topicName+" doesn't exist"))
+		return
 	}
 
 	c.JSON(http.StatusOK, &topic)
