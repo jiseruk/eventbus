@@ -35,13 +35,20 @@ func (_m *TopicServiceMock) CreateTopic(name string, engine client.EngineService
 	return r0, r1
 }
 
-// GetTopic provides a mock function with given fields: name
-func (_m *TopicServiceMock) GetTopic(name string) (*model.Topic, *errors.APIError) {
-	ret := _m.Called(name)
+// GetTopic provides a mock function with given fields: name, adminToken
+func (_m *TopicServiceMock) GetTopic(name string, adminToken ...string) (*model.Topic, *errors.APIError) {
+	_va := make([]interface{}, len(adminToken))
+	for _i := range adminToken {
+		_va[_i] = adminToken[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, name)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
 
 	var r0 *model.Topic
-	if rf, ok := ret.Get(0).(func(string) *model.Topic); ok {
-		r0 = rf(name)
+	if rf, ok := ret.Get(0).(func(string, ...string) *model.Topic); ok {
+		r0 = rf(name, adminToken...)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*model.Topic)
@@ -49,8 +56,8 @@ func (_m *TopicServiceMock) GetTopic(name string) (*model.Topic, *errors.APIErro
 	}
 
 	var r1 *errors.APIError
-	if rf, ok := ret.Get(1).(func(string) *errors.APIError); ok {
-		r1 = rf(name)
+	if rf, ok := ret.Get(1).(func(string, ...string) *errors.APIError); ok {
+		r1 = rf(name, adminToken...)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*errors.APIError)

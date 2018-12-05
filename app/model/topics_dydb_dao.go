@@ -12,12 +12,14 @@ var topicsTable = config.Get("databases.dynamodb.tables.topics")
 
 type TopicsDaoDynamoImpl struct {
 	DynamoClient dynamodbiface.DynamoDBAPI
+	UUID         UUID
 }
 
 func (t *TopicsDaoDynamoImpl) CreateTopic(name string, engine string, resourceID string) (*Topic, error) {
 	topic := Topic{Name: name, Engine: engine, ResourceID: resourceID}
 	topic.CreatedAt = Clock.Now()
 	topic.UpdatedAt = Clock.Now()
+	topic.SecurityToken = t.UUID.GetUUID()
 	//topic.ID = uuid.New()
 	//topic.ID = 1
 	item, err := dynamodbattribute.MarshalMap(topic)

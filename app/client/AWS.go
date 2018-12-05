@@ -233,6 +233,7 @@ func (azn AWSEngine) CreatePullSubscriber(topic model.Topic, subscriber string, 
 		QueueName: aws.String(GetAWSResourcePrefix() + "pull-queue-" + subscriber),
 		Attributes: map[string]*string{
 			"VisibilityTimeout": aws.String(strconv.Itoa(visibilityTimeout)),
+			//"ReceiveMessageWaitTimeSeconds": aws.String("1"),
 		},
 	})
 	if err != nil {
