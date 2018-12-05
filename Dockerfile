@@ -15,7 +15,7 @@ COPY . .
 FROM builder as tests
 WORKDIR /go/src/github.com/wenance/wequeue-management_api
 RUN swag init
-#RUN cd test && go test -covermode=count -coverprofile=cover.out -coverpkg=../app/...
+RUN cd test && go test -covermode=count -coverprofile=cover.out -coverpkg=../app/...
 #RUN bin/tests.sh
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main . 
 
