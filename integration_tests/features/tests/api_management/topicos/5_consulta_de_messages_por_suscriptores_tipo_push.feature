@@ -21,4 +21,4 @@ Escenario: Consulta de mensajes perdidos
 Escenario: Consulta de mensajes sin indicar quien soy
 	Cuando consulto los mensajes sin indicar quien soy
 	Entonces debo obtener un status code 400
-	Y debo obtener el mensaje de error 'subscriber and max_messages fields are required'
+	Y debo obtener el mensaje de error 'max_messages: The field is required; subscriber: The field is required.'

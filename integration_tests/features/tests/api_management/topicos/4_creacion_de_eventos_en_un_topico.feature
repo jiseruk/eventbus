@@ -9,8 +9,8 @@ Característica: Creación de un evento en un tópico
 # endpoint: /messages
 # body = 
 # 	{
-# 		"topic": "topic_name", 
-# 		"payload": {}
+#     "topic": "topic_name", 
+#     "payload": {}
 # 	}
 
 
@@ -36,24 +36,24 @@ Escenario: Envío de un evento sin indicar el tópico
 	Dado que voy a notificar un evento cualquiera
 	Cuando envío una notificación sin indicar el tópico
 	Entonces debo obtener un status code 400
-	Y debo obtener el mensaje de error 'Topic cannot be null. Topic must be defined'
+	Y debo obtener el mensaje de error 'topic: The field is required.'
 
 Escenario: Envío de un evento a un tópico sin indicar el payload
 	Dado que voy notificar un evento a un tópico existente
 	Cuando envío una notificación sin el payload
 	Entonces debo obtener un status code 400
-	Y debo obtener el mensaje de error 'Payload cannot be null. Payload must be defined'
+	Y debo obtener el mensaje de error 'payload: The field is required.'
 
 Escenario: Envío de un evento a un tópico con un payload vacío
 	Dado que voy notificar un evento a un tópico existente
 	Cuando envío una notificación con un payload vacío
 	Entonces debo obtener un status code 400
-	Y debo obtener el mensaje de error 'Payload cannot be empty. Payload must have content'	
+	Y debo obtener el mensaje de error 'payload: The field is required.'	
 
 Escenario: Envío de un evento a un tópico con un payload que no es un JSON
 	Dado que voy notificar un evento a un tópico existente
 	Cuando envío una notificación con un payload que no es JSON
 	Entonces debo obtener un status code 400
-	Y debo obtener el mensaje de error 'Payload should be a json'	
+	Y debo obtener el mensaje de error 'payload: it should be a valid json object.'	
 
 

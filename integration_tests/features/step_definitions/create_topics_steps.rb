@@ -8,22 +8,22 @@ end
 
 Dado("un topico determinado") do
   @topic_name = create_topic
-  puts "Topic Name: #{@topic_name}"
+  puts "Topic Name: #{@topic_name}" if $debug
 end
 
 Dado("que soy owner de un tópico") do
   @topic_name = create_topic
-  puts "Topic Name: #{@topic_mame}"
+  puts "Topic Name: #{@topic_name}" if $debug
 end
 
 Dado("tres tópicos diferentes") do
   create_topics(3)
-  puts "#{topics}"
+  puts "#{topics}" if $debug
 end
 
 Dado("un tópico existente") do
   @topic_name = create_topic
-  puts "Topic Name: #{@topic_name}"
+  puts "Topic Name: #{@topic_name}" if $debug
 end
 
 
@@ -85,24 +85,24 @@ Entonces("debo obtener una respuesta de tópico existente") do
 end
 
 Entonces("debo obtener una respuesa que indique que el nombre es obligatorio") do
-  expected_msg = "Topic name cannot be null or empty"
+  expected_msg = "name: The field is required."
   got = response_message
   fail "Se esperaba el mensaje: '#{expected_msg}'.
-  Se obtuvo #{got}" unless got == expected_msg
+  Se obtuvo '#{got}'" unless got == expected_msg
 end
 
 Entonces("debo obtener una respuesa que indique que el engine es obligatorio") do
-  expected_msg = "Engine cannot be null or empty"
+  expected_msg = "engine: The field is required."
   got = response_message
   fail "Se esperaba el mensaje: '#{expected_msg}'.
-  Se obtuvo #{got}" unless got == expected_msg
+  Se obtuvo '#{got}'" unless got == expected_msg
 end
 
 Entonces("debo obtener una respuesa que indique que el engine no existe") do
-  expected_msg = "Invalid engine #{@engine}"
+  expected_msg = "engine: Must be one of [AWS, AWSStream]."
   got = response_message
   fail "Se esperaba el mensaje: '#{expected_msg}'.
-  Se obtuvo #{got}" unless got == expected_msg
+  Se obtuvo '#{got}'" unless got == expected_msg
 end
 
 Entonces("la respuesta debe tener los valores {string}") do |fields|
@@ -113,10 +113,10 @@ Entonces("la respuesta debe tener los valores {string}") do |fields|
 end
 
 Entonces("debo obtener el mensaje de tópico inexistente") do
-  expected_msg = "Topic #{@topic_name} does not exist"
+  expected_msg = "The topic #{@topic_name} doesn't exist"
   got = response_message
   fail "Se esperaba el mensaje: '#{expected_msg}'.
-  Se obtuvo #{got}" unless got == expected_msg
+  Se obtuvo '#{got}'" unless got == expected_msg
 end
 
 
@@ -132,22 +132,22 @@ end
 
 Entonces("debo obtener el mensaje de error {string}") do |expected_msg|
   got = response_message
-  fail "Se obtuvo el mensaje #{got}
+  fail "Se obtuvo el mensaje '#{got}'
   Status code: #{status_code}" unless got == expected_msg
 end
 
 Entonces("Entonces debo obtener el mensaje de error de suscriptor existente") do
   got = response_message
   expected_message = "Subscription with name #{@subscriber} already exists"
-  fail "Se experaba: #{expected_msg}
-  Se obtuvo: #{got}" unless got == expected_message
+  fail "Se experaba: '#{expected_msg}'
+  Se obtuvo: '#{got}'" unless got == expected_message
 end
 
 Entonces("debo obtener el mensaje de error the endpoint que no responde") do
   expected_msg = "The endpoint #{@endpoint} should return 2xx to a POST HTTP Call, but return error"
   got = response_message
   fail "Se obtuvo el mensaje: '#{got}'
-  Se esperaba #{expected_msg}" unless got.start_with? expected_msg
+  Se esperaba '#{expected_msg}'" unless got.start_with? expected_msg
 end
 
 Entonces("todas las suscripciones deben resultar correctas") do

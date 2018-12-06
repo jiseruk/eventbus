@@ -17,7 +17,23 @@ end
 
 Dado("que se notificó un evento a un topico que estoy suscripto") do
   @sent_event = random_event_for_topic(@topic_name)
-  puts @sent_event
+  puts @sent_event if $debug
+  send_event(@sent_event)
+end
+
+Dado("que se notificó un evento a un topico que estoy suscripto en modo pull con visibilidad de 5 segundos") do
+  @sent_event = random_event_for_topic(@topic_name, 5)
+  puts @sent_event if $debug
+  send_event(@sent_event)
+end
+
+Dado("se envía un evento al topico con visibilidad de {int} segundos") do |int|
+  pending # Write code here that turns the phrase above into concrete actions
+end
+
+Dado("se envía un evento al topico") do
+  @sent_event = random_event_for_topic(@topic_name, 5)
+  puts @sent_event if $debug
   send_event(@sent_event)
 end
 
@@ -45,7 +61,6 @@ Cuando("envío una notificación sin indicar el tópico") do
   send_event(@sent_event)
 end
 
-
 Cuando("envío una notificación sin el payload") do
   @sent_event = random_event_for_topic(@topic_name)
   @sent_event.delete('payload')
@@ -69,23 +84,33 @@ Cuando("consulto los mensajes sin indicar quien soy") do
 end
 
 Cuando("consulto los mensajes perdidos al tópico") do
-  ask_for_missing_events(@subscriber)
+  ask_for_missing_events(@subscriber, "5")
 end
 
-
-
-
-
-
-Dado("que se notificó un evento a un topico que estoy suscripto en modo pull") do
-  @sent_event = random_event_for_topic(@topic_name)
-  puts @sent_event
-  send_event(@sent_event)
+Cuando("uno de los suscriptores consulta el mensaje sin hacer mas que leerlo") do
+  puts "Subscriber: #{@subscriber}" if $debug
+  res = ask_for_missing_events(@subscriber, "1")
+  puts parsed_response if $debug
 end
 
 Cuando("consulto los mensajes al tópico") do
-  ask_for_missing_events(@subscriber, "10")
+  puts "Subscriber: #{@subscriber}" if $debug  
+  res = ask_for_missing_events(@subscriber, "5")
+  puts parsed_response if $debug
 end
+
+Cuando("uno de los suscriptores consulta el mensaje y lo borra") do
+  puts "Subscriber: #{@subscriber}" if $debug  
+  res = ask_for_missing_events(@subscriber, "5")
+  puts parsed_response if $debug
+  delete_messages
+end
+
+
+
+
+
+
 
 Entonces("debo obtener los mensajes existentes") do
   unless exists_events? @sent_event
@@ -95,11 +120,8 @@ Entonces("debo obtener los mensajes existentes") do
   end
 end
 
-
-
-
 Entonces("debo obtener el mensaje de error que el tópico no existe") do
-  expected_msg = "Topic #{topic_name} doesn't exists"
+  expected_msg = "The topic unknown-topic doesn't exist"
   got = response_message
   fail "El mensaje obtenido fué:
   '#{got}'
@@ -116,15 +138,13 @@ Entonces("los sucriptores debe recibir dicho evento") do
 end
 
 Entonces("debo obtener los mensajes enviados que no pude atender") do
-  fail "No se encontró el mensaje" unless last_message == @sent_event
+  got = last_message
+  fail "No se encontró el mensaje. Obtenido '#{got}':
+  Esperado: '#{@sent_event}'" unless are_messages_equals?(got, @sent_event)
 end
 
-# Entonces("los mensajes deben desaparecer de mensajes perdidos ya que los he consultado") do
-#   pending # Write code here that turns the phrase above into concrete actions
-# end
-
 Entonces("los sucriptores debe poder levantar el mensaje") do
-  ask_for_missing_events(@subscriber,"10")
+  ask_for_missing_events(@subscriber, "5")
   fail "No se econtró el mensaje" unless exists_events? @sent_event
 end
 
@@ -132,3 +152,20 @@ Entonces("los mensajes deben tener la fecha de enviado") do
   fail "No se encontro la fecha de envío del mensaje" unless message_has_sent_date?
 end
 
+Entonces("el otro suscriber no puede leer el mensaje") do
+  puts "Subscriber: #{@subscriber}" if $debug
+  res = ask_for_missing_events(@subscriber, "5")
+  puts parsed_response if $debug
+  fail "Se obtuvo mensajes cuando no debía ya que los había tomado el primer subscriber" if exists_events? @sent_event
+end
+
+Entonces("el otro suscriptor no encontrará el mensaje") do
+
+end
+
+Entonces("el otro suscriber puede leer el mensaje") do
+  puts "Subscriber: #{@subscriber}" if $debug
+  res = ask_for_missing_events(@subscriber, "5")
+  puts parsed_response if $debug
+  fail "No se encontró el mensaje esperado" unless exists_events? @sent_event
+end
