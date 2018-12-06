@@ -1,19 +1,28 @@
-# wequeue-management_api
+# Bondi
 
 This is the event bus of Wenance. it's made for transforming the synchronized api calls between different microservices in an asynchronous, and event oriented comunnication.
 
 ## For starting the local environment:
 ```
-docker-compose -p wequeue up --build
+docker-compose -p bondi up --build
 ```
 
 ##For running integration tests:
 ```
-docker-compose -p wequeue -f docker-compose-integration.yml up --build
+docker-compose -p bondi -f docker-compose-integration.yml up --build
 ```
 
 ## API Documentation
 http://localhost:8080/swagger/index.html
+
+##Environments
+
+###Dev
+http://bondi.dev.fintechpeople.io:81
+###Stage
+http://bondi.stage.fintechpeople.io:81
+###Prod
+http://bondi.fintechpeople.io:81
 
 ## Create a topic
 ```
@@ -22,7 +31,7 @@ curl -XPOST http://localhost:8080/topics {"name":"topic_name", "engine":"AWS"}
 
 ## Start your push subscriber app dockerized, in the same network
 ```
-docker run --network=wequeue_default --network-alias=$SUBSCRIBER_NAME your:app  
+docker run --network=bondi_default --network-alias=$SUBSCRIBER_NAME your:app  
 ```
 ## Create a push subscriber
 ```
