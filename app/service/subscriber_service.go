@@ -64,6 +64,9 @@ func (s SubscriptionServiceImpl) CreateSubscription(name string, endpoint *strin
 		output.DeadLetterQueue, output.PullingQueue, visibilityTimeout); err != nil {
 		return nil, errors.NewAPIError(http.StatusInternalServerError, "database_create_subscriber_error", err.Error())
 	} else {
+		subscription.DeadLetterQueue = ""
+		subscription.PullingQueue = ""
+		subscription.ResourceID = ""
 		return subscription, nil
 	}
 

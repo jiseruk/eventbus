@@ -10,9 +10,11 @@ import (
 	"github.com/wenance/wequeue-management_api/app/model"
 )
 
+var ADMIN_TOKEN_HASH = "d571a372f7d39bcdcbb0c0e686c3b5118537d9e6266a999a83b578a9cf4ebdac"
+
 type TopicService interface {
 	CreateTopic(name string, engine client.EngineService) (*model.Topic, *errors.APIError)
-	GetTopic(name string) (*model.Topic, *errors.APIError)
+	GetTopic(name string, adminToken ...string) (*model.Topic, *errors.APIError)
 }
 
 type TopicServiceImpl struct {
@@ -39,11 +41,13 @@ func (t TopicServiceImpl) CreateTopic(name string, engine client.EngineService) 
 
 		return nil, errors.NewAPIError(http.StatusInternalServerError, "database_create_topic_error", err.Error())
 	} else {
+		topic.ResourceID = ""
 		return topic, nil
 	}
 }
 
-func (t TopicServiceImpl) GetTopic(name string) (*model.Topic, *errors.APIError) {
+func (t TopicServiceImpl) GetTopic(name string, adminToken ...string) (*model.Topic, *errors.APIError) {
+
 	topic, err := t.Dao.GetTopic(name)
 	if err != nil {
 		return nil, errors.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())

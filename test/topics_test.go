@@ -1,7 +1,6 @@
 package test
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -36,7 +35,7 @@ func TestCreateTopic(t *testing.T) {
 
 	t.Run("It should create the topic in AWS and the DB entity", func(t *testing.T) {
 		client.EnginesMap["AWS"] = &client.AWSEngine{SNSClient: mockSNS}
-		service.TopicsService = service.TopicServiceImpl{Dao: &model.TopicsDaoDynamoImpl{DynamoClient: mockDynamo}}
+		service.TopicsService = service.TopicServiceImpl{Dao: &model.TopicsDaoDynamoImpl{DynamoClient: mockDynamo, UUID: &UUIDMock{}}}
 		mockSNS.On("CreateTopic", &sns.CreateTopicInput{Name: aws.String(client.GetAWSResourcePrefix() + topic)}).
 			Return(&sns.CreateTopicOutput{TopicArn: &resource}, nil).Once()
 
@@ -97,7 +96,9 @@ func TestCreateTopic(t *testing.T) {
 	t.Run("it should fail create the topic if a dynamo.PutItem() error happend", func(t *testing.T) {
 		client.EnginesMap["AWS"] = &client.AWSEngine{SNSClient: mockSNS}
 		//service.TopicsService = service.TopicServiceImpl{Db: mockDAO}
-		service.TopicsService = service.TopicServiceImpl{Dao: &model.TopicsDaoDynamoImpl{DynamoClient: mockDynamo}}
+		service.TopicsService = service.TopicServiceImpl{
+			Dao: &model.TopicsDaoDynamoImpl{DynamoClient: mockDynamo, UUID: &UUIDMock{}},
+		}
 
 		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
 			return *input.Key["name"].S == topic && *input.TableName == "Topics"
@@ -125,7 +126,7 @@ func TestCreateTopic(t *testing.T) {
 		client.EnginesMap["AWS"] = &client.AWSEngine{SNSClient: mockSNS}
 		//service.TopicsService = service.TopicServiceImpl{Db: mockDAO}
 		service.TopicsService = service.TopicServiceImpl{Dao: &model.TopicsDaoDynamoImpl{DynamoClient: mockDynamo}}
-
+		service.ADMIN_TOKEN_HASH = ""
 		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
 			return *input.Key["name"].S == topic && *input.TableName == "Topics"
 		})).Return(&dynamodb.GetItemOutput{Item: nil}, nil).Once()
@@ -169,13 +170,16 @@ func TestCreateTopic(t *testing.T) {
 
 func TestGetTopic(t *testing.T) {
 	//mockDAO := &TopicsDaoMock{}
+	model.Clock = clockwork.NewFakeClock()
 	mockDynamo := &DynamoDBAPIMock{}
-	service.TopicsService = service.TopicServiceImpl{Dao: &model.TopicsDaoDynamoImpl{DynamoClient: mockDynamo}}
+	service.TopicsService = service.TopicServiceImpl{
+		Dao: &model.TopicsDaoDynamoImpl{DynamoClient: mockDynamo, UUID: &UUIDMock{}},
+	}
 	//service.TopicsService = service.TopicServiceImpl{Dao: mockDAO}
 	router := server.GetRouter()
-	topic := &model.Topic{Name: "topic", Engine: "AWS"}
+	topic := getTopicMock("topic", "AWS", "arn:topic")
 	topicItem, _ := dynamodbattribute.MarshalMap(topic)
-	topicJSON, _ := json.Marshal(&topic)
+	//	topicJSON, _ := json.Marshal(&topic)
 
 	t.Run("It should return the topic", func(t *testing.T) {
 		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {

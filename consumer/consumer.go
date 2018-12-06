@@ -15,10 +15,9 @@ func main() {
 			c.JSON(http.StatusBadRequest, err.Error())
 			return
 		}
-		log.Printf("Message received: %#v", message)
+		log.Printf("Message received: %v \n", message)
 
 		payload := message["payload"].(map[string]interface{})
-		log.Printf("Message received, payload: %#v", payload)
 		if payload != nil && payload["fail"] == true {
 			c.JSON(http.StatusInternalServerError, &message)
 			return
