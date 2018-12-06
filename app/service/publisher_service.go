@@ -10,7 +10,7 @@ import (
 )
 
 type PublisherService interface {
-	Publish(message model.PublishMessage) (*model.PublishMessage, *errors.APIError)
+	Publish(message model.PublishMessage, securityToken string) (*model.PublishMessage, *errors.APIError)
 }
 
 type PublisherServiceImpl struct {
@@ -18,7 +18,7 @@ type PublisherServiceImpl struct {
 
 var PublishersService PublisherService
 
-func (PublisherServiceImpl) Publish(message model.PublishMessage) (*model.PublishMessage, *errors.APIError) {
+func (PublisherServiceImpl) Publish(message model.PublishMessage, securityToken string) (*model.PublishMessage, *errors.APIError) {
 	topicObj, apierr := TopicsService.GetTopic(message.Topic)
 	if apierr != nil {
 		return nil, apierr
@@ -26,6 +26,10 @@ func (PublisherServiceImpl) Publish(message model.PublishMessage) (*model.Publis
 	if topicObj == nil {
 		return nil, errors.NewAPIError(http.StatusBadRequest, "topic_not_exists", fmt.Sprintf("The topic %s doesn't exist", message.Topic))
 	}
+	if topicObj.SecurityToken != securityToken {
+		return nil, errors.NewAPIError(http.StatusUnauthorized, "security_error", "The X-Publish-Token header is invalid")
+	}
+
 	engine := client.GetEngineService(topicObj.Engine)
 	timestamp := model.Clock.Now().UnixNano()
 	message.Timestamp = &timestamp

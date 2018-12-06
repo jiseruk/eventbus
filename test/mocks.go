@@ -18,6 +18,7 @@ func getTopicMock(name string, engine string, resource string) *model.Topic {
 	topic := model.Topic{ResourceID: resource, Name: name, Engine: engine}
 	topic.CreatedAt = model.Clock.Now()
 	topic.UpdatedAt = model.Clock.Now()
+	topic.SecurityToken = UUIDMock{}.GetUUID()
 	return &topic
 }
 
@@ -50,9 +51,13 @@ func getLambdaMock(endpoint string, subscriber string, topic string, dlqArn stri
 	return createArgs
 }
 
-func executeMockedRequest(router *gin.Engine, method string, uri string, body string) *httptest.ResponseRecorder {
+func executeMockedRequest(router *gin.Engine, method string, uri string, body string, headers ...string) *httptest.ResponseRecorder {
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest(method, uri, strings.NewReader(body))
+	for _, h := range headers {
+		header := strings.Split(h, ":")
+		req.Header[header[0]] = []string{header[1]}
+	}
 	router.ServeHTTP(rec, req)
 	return rec
 }
@@ -70,4 +75,10 @@ func NewTestClient(fn RoundTripFunc) *http.Client {
 	return &http.Client{
 		Transport: RoundTripFunc(fn),
 	}
+}
+
+type UUIDMock struct{}
+
+func (u UUIDMock) GetUUID() string {
+	return "uuid"
 }
