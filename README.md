@@ -24,7 +24,7 @@ http://bondi.stage.fintechpeople.io:81
 ### Prod
 http://bondi.fintechpeople.io:81
 
-## Create a topic
+## Create a topic (The returning json contains a security_token which should be saved and used when publishing)
 ```
 curl -XPOST http://bondi.dev.fintechpeople.io:81/topics {"name":"topic_name", "engine":"AWS"}
 ```
@@ -45,7 +45,7 @@ curl http://bondi.dev.fintechpeople.io:81/subscribers -XPOST -d'{"name":"test_su
 
 ## Publish a message
 ```
-curl http://bondi.dev.fintechpeople.io:81 -XPOST -d'{"topic":"test_topic", "payload":{"message":"Hello!!"}}' -H'content-type: application/json'
+curl http://bondi.dev.fintechpeople.io:81 -XPOST -d'{"topic":"test_topic", "payload":{"message":"Hello!!"}}' -H'content-type: application/json' -H'X-Publish-Token:$security_token'
 ```
 ## Consume failed pushed messages from the dead-letter-queue if it's a push subscriber
 ```
