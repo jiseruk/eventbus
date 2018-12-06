@@ -1,6 +1,7 @@
 package service
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"net/http"
 
@@ -47,5 +48,20 @@ func (t TopicServiceImpl) GetTopic(name string) (*model.Topic, *errors.APIError)
 	if err != nil {
 		return nil, errors.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
 	}
+	for i, token := range adminToken {
+		if token == "" || i > 0 {
+			topic.SecurityToken = ""
+			break
+		}
+
+		h := sha256.New()
+		h.Write([]byte(token))
+		hash := fmt.Sprintf("%x", h.Sum(nil))
+		if hash != ADMIN_TOKEN_HASH {
+			topic.SecurityToken = ""
+			break
+		}
+	}
+	topic.ResourceID = ""
 	return topic, nil
 }

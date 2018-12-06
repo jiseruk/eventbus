@@ -53,7 +53,7 @@ func TestCreateTopic(t *testing.T) {
 		req, _ := http.NewRequest("POST", "/topics", strings.NewReader(`{"name": "topic", "engine": "AWS"}`))
 		router.ServeHTTP(rec, req)
 
-		assert.JSONEq(t, fmt.Sprintf(`{"name": "topic", "engine": "AWS", "resource_id":"arn:topic", "created_at": "%s"}`, model.Clock.Now().Format("2006-01-02T15:04:05Z")), rec.Body.String())
+		assert.JSONEq(t, fmt.Sprintf(`{"name": "topic", "engine": "AWS", "created_at": "%s", "security_token":"uuid"}`, model.Clock.Now().Format("2006-01-02T15:04:05Z")), rec.Body.String())
 		assert.Equal(t, 201, rec.Code)
 		mockSNS.AssertExpectations(t)
 		mockDynamo.AssertExpectations(t)
@@ -183,7 +183,22 @@ func TestGetTopic(t *testing.T) {
 		})).Return(&dynamodb.GetItemOutput{Item: topicItem}, nil).Once()
 
 		res := executeMockedRequest(router, "GET", "/topics/topic", "")
-		assert.JSONEq(t, res.Body.String(), string(topicJSON))
+		assert.JSONEq(t, res.Body.String(),
+			fmt.Sprintf(`{"name":"topic", "engine":"AWS", "created_at":"%s"}`, model.Clock.Now().Format("2006-01-02T15:04:05Z")))
+		assert.Equal(t, 200, res.Code)
+		mockDynamo.AssertExpectations(t)
+	})
+
+	t.Run("It should return the topic with the security token if admin token header is provided", func(t *testing.T) {
+		//Para no develar el verdadero Admin Token
+		service.ADMIN_TOKEN_HASH = "d6d88aa97c88342259b82f64771658adcadcde3b18913b9c64e76129713c7605"
+		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
+			return *input.Key["name"].S == topic.Name && *input.TableName == "Topics"
+		})).Return(&dynamodb.GetItemOutput{Item: topicItem}, nil).Once()
+
+		res := executeMockedRequest(router, "GET", "/topics/topic", "", "X-Admin-Token:PutoElQueDesencripta")
+		assert.JSONEq(t, fmt.Sprintf(`{"name":"topic", "engine":"AWS", "created_at":"%s", "security_token":"uuid"}`,
+			model.Clock.Now().Format("2006-01-02T15:04:05Z")), res.Body.String())
 		assert.Equal(t, 200, res.Code)
 		mockDynamo.AssertExpectations(t)
 	})
