@@ -36,7 +36,7 @@ func TestPublishMessage(t *testing.T) {
 		t.Run("It should publish a message in a topic", func(t *testing.T) {
 			var topic = "topic"
 			var resource = "arn:topic"
-			topicMock := getTopicMock(topic, "AWS", resource)
+			topicMock := getTopicMock(topic, "AWS", resource, "owner", "descr")
 
 			topicServiceMock.On("GetTopic", topic).Return(topicMock, nil).Once()
 			mockSNS.On("Publish", &sns.PublishInput{TopicArn: &resource,
@@ -120,7 +120,7 @@ func TestPublishMessage(t *testing.T) {
 		service.PublishersService = service.PublisherServiceImpl{}
 		service.TopicsService = topicServiceMock
 
-		topicMock := getTopicMock("topic", "AWS", "arn:topic")
+		topicMock := getTopicMock("topic", "AWS", "arn:topic", "owner", "descr")
 		var message = `{"message":"hola"}`
 
 		topicServiceMock.On("GetTopic", topicMock.Name).Return(topicMock, nil).Once()
