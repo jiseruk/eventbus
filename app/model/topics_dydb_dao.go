@@ -15,8 +15,8 @@ type TopicsDaoDynamoImpl struct {
 	UUID         UUID
 }
 
-func (t *TopicsDaoDynamoImpl) CreateTopic(name string, engine string, resourceID string) (*Topic, error) {
-	topic := Topic{Name: name, Engine: engine, ResourceID: resourceID}
+func (t *TopicsDaoDynamoImpl) CreateTopic(name string, engine string, owner string, description string, resourceID string) (*Topic, error) {
+	topic := Topic{Name: name, Engine: engine, ResourceID: resourceID, Owner: owner, Description: description}
 	topic.CreatedAt = Clock.Now()
 	topic.UpdatedAt = Clock.Now()
 	topic.SecurityToken = t.UUID.GetUUID()
@@ -73,4 +73,25 @@ func (t *TopicsDaoDynamoImpl) DeleteTopic(name string) error {
 	_, err := t.DynamoClient.DeleteItem(input)
 	return err
 
+}
+
+func (t *TopicsDaoDynamoImpl) ListTopics() ([]Topic, error) {
+	input := &dynamodb.ScanInput{
+		TableName:                &topicsTable,
+		ProjectionExpression:     aws.String("#name, engine, #owner, description, created_at"),
+		ExpressionAttributeNames: map[string]*string{"#name": aws.String("name"), "#owner": aws.String("owner")},
+	}
+
+	output, err := t.DynamoClient.Scan(input)
+	if err != nil {
+		return nil, err
+	}
+
+	var topics []Topic
+	err = dynamodbattribute.UnmarshalListOfMaps(output.Items, &topics)
+	if err != nil {
+		return nil, err
+	}
+
+	return topics, nil
 }

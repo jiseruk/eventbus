@@ -27,6 +27,8 @@ type Topic struct {
 	Engine        string    `json:"engine" example:"AWS"`
 	ResourceID    string    `json:"resource_id,omitempty"`
 	SecurityToken string    `json:"security_token,omitempty"`
+	Owner         string    `json:"owner,omitempty"`
+	Description   string    `json:"description,omitempty"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"-"`
 	//DeletedAt *time.Time `sql:"index"`
@@ -39,6 +41,8 @@ func (t Topic) Validate() error {
 			validation.Length(1, 50)),
 		validation.Field(&t.Engine, validation.Required.Error(errors.ErrorFieldRequired),
 			validation.In("AWS", "AWSStream").Error(errors.GetInListError("AWS", "AWSStream"))),
+		validation.Field(&t.Owner, validation.Required.Error(errors.ErrorFieldRequired)),
+		validation.Field(&t.Description, validation.Required.Error(errors.ErrorFieldRequired)),
 	)
 }
 

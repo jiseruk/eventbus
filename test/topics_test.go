@@ -30,7 +30,7 @@ func TestCreateTopic(t *testing.T) {
 	router := server.GetRouter()
 	var topic = "topic"
 	var resource = "arn:topic"
-	topicMock := getTopicMock(topic, "AWS", resource)
+	topicMock := getTopicMock(topic, "AWS", resource, "owner", "descr")
 	topicItem, _ := dynamodbattribute.MarshalMap(topicMock)
 
 	t.Run("It should create the topic in AWS and the DB entity", func(t *testing.T) {
@@ -49,10 +49,11 @@ func TestCreateTopic(t *testing.T) {
 		}).Return(&dynamodb.PutItemOutput{}, nil).Once()
 
 		rec := httptest.NewRecorder()
-		req, _ := http.NewRequest("POST", "/topics", strings.NewReader(`{"name": "topic", "engine": "AWS"}`))
+		req, _ := http.NewRequest("POST", "/topics", strings.NewReader(`{"name": "topic", "engine": "AWS", "description":"descr", "owner":"owner"}`))
 		router.ServeHTTP(rec, req)
 
-		assert.JSONEq(t, fmt.Sprintf(`{"name": "topic", "engine": "AWS", "created_at": "%s", "security_token":"uuid"}`, model.Clock.Now().Format("2006-01-02T15:04:05Z")), rec.Body.String())
+		assert.JSONEq(t,
+			fmt.Sprintf(`{"name": "topic", "engine": "AWS", "created_at": "%s", "security_token":"uuid", "owner":"owner", "description":"descr"}`, model.Clock.Now().Format("2006-01-02T15:04:05Z")), rec.Body.String())
 		assert.Equal(t, 201, rec.Code)
 		mockSNS.AssertExpectations(t)
 		mockDynamo.AssertExpectations(t)
@@ -70,7 +71,7 @@ func TestCreateTopic(t *testing.T) {
 		}, nil).Once()
 
 		rec := httptest.NewRecorder()
-		req, _ := http.NewRequest("POST", "/topics", strings.NewReader(`{"name": "topic", "engine": "AWS"}`))
+		req, _ := http.NewRequest("POST", "/topics", strings.NewReader(`{"name": "topic", "engine": "AWS", "description": "descr", "owner":"owner"}`))
 		router.ServeHTTP(rec, req)
 
 		assert.JSONEq(t, `{"status": 400, "code": "database_error", "message": "Topic with name topic already exists"}`, rec.Body.String())
@@ -85,7 +86,7 @@ func TestCreateTopic(t *testing.T) {
 		mockDynamo.On("GetItem", mock.Anything).Return(nil, errors.New("Dynamodb error")).Once()
 
 		rec := httptest.NewRecorder()
-		req, _ := http.NewRequest("POST", "/topics", strings.NewReader(`{"name": "topic", "engine": "AWS"}`))
+		req, _ := http.NewRequest("POST", "/topics", strings.NewReader(`{"name": "topic", "engine": "AWS", "description":"descr", "owner":"owner"}`))
 		router.ServeHTTP(rec, req)
 		assert.JSONEq(t, `{"status": 500, "code": "database_error", "message": "Dynamodb error"}`, rec.Body.String())
 		assert.Equal(t, 500, rec.Code)
@@ -113,7 +114,7 @@ func TestCreateTopic(t *testing.T) {
 			Return(&sns.CreateTopicOutput{TopicArn: &resource}, nil).Once()
 
 		rec := httptest.NewRecorder()
-		req, _ := http.NewRequest("POST", "/topics", strings.NewReader(`{"name": "topic", "engine": "AWS"}`))
+		req, _ := http.NewRequest("POST", "/topics", strings.NewReader(`{"name": "topic", "engine": "AWS", "description":"descr", "owner":"owner"}`))
 		router.ServeHTTP(rec, req)
 		assert.JSONEq(t, `{"status": 500, "code": "database_create_topic_error", "message": "Dynamodb error"}`, rec.Body.String())
 		assert.Equal(t, 500, rec.Code)
@@ -135,7 +136,7 @@ func TestCreateTopic(t *testing.T) {
 			Return(nil, errors.New("engine error")).Once()
 
 		rec := httptest.NewRecorder()
-		req, _ := http.NewRequest("POST", "/topics", strings.NewReader(`{"name": "topic", "engine": "AWS"}`))
+		req, _ := http.NewRequest("POST", "/topics", strings.NewReader(`{"name": "topic", "engine": "AWS", "description":"descr", "owner":"owner"}`))
 		router.ServeHTTP(rec, req)
 		assert.JSONEq(t, `{"status": 500, "code": "engine_error", "message": "engine error"}`, rec.Body.String())
 		assert.Equal(t, 500, rec.Code)
@@ -177,7 +178,7 @@ func TestGetTopic(t *testing.T) {
 	}
 	//service.TopicsService = service.TopicServiceImpl{Dao: mockDAO}
 	router := server.GetRouter()
-	topic := getTopicMock("topic", "AWS", "arn:topic")
+	topic := getTopicMock("topic", "AWS", "arn:topic", "owner", "descr")
 	topicItem, _ := dynamodbattribute.MarshalMap(topic)
 	//	topicJSON, _ := json.Marshal(&topic)
 
@@ -187,8 +188,9 @@ func TestGetTopic(t *testing.T) {
 		})).Return(&dynamodb.GetItemOutput{Item: topicItem}, nil).Once()
 
 		res := executeMockedRequest(router, "GET", "/topics/topic", "")
-		assert.JSONEq(t, res.Body.String(),
-			fmt.Sprintf(`{"name":"topic", "engine":"AWS", "created_at":"%s"}`, model.Clock.Now().Format("2006-01-02T15:04:05Z")))
+		assert.JSONEq(t,
+			fmt.Sprintf(`{"name":"topic", "engine":"AWS", "created_at":"%s", "owner": "owner", "description":"descr"}`, model.Clock.Now().Format("2006-01-02T15:04:05Z")),
+			res.Body.String())
 		assert.Equal(t, 200, res.Code)
 		mockDynamo.AssertExpectations(t)
 	})
@@ -201,7 +203,7 @@ func TestGetTopic(t *testing.T) {
 		})).Return(&dynamodb.GetItemOutput{Item: topicItem}, nil).Once()
 
 		res := executeMockedRequest(router, "GET", "/topics/topic", "", "X-Admin-Token:PutoElQueDesencripta")
-		assert.JSONEq(t, fmt.Sprintf(`{"name":"topic", "engine":"AWS", "created_at":"%s", "security_token":"uuid"}`,
+		assert.JSONEq(t, fmt.Sprintf(`{"name":"topic", "engine":"AWS", "created_at":"%s", "security_token":"uuid", "owner":"owner", "description":"descr"}`,
 			model.Clock.Now().Format("2006-01-02T15:04:05Z")), res.Body.String())
 		assert.Equal(t, 200, res.Code)
 		mockDynamo.AssertExpectations(t)
@@ -218,15 +220,56 @@ func TestGetTopic(t *testing.T) {
 		mockDynamo.AssertExpectations(t)
 	})
 
-	for _, path := range []string{"/topics/", "/topics"} {
+}
 
-		t.Run("It should fail getting topic if the topic param is not present", func(t *testing.T) {
-
-			res := executeMockedRequest(router, "GET", path, "")
-			assert.JSONEq(t, res.Body.String(), `{"message":"Page not found", "code":"page_not_found", "status":404}`)
-			assert.Equal(t, 404, res.Code)
-
-		})
+func TestListTopics(t *testing.T) {
+	model.Clock = clockwork.NewFakeClock()
+	mockDynamo := &DynamoDBAPIMock{}
+	service.TopicsService = service.TopicServiceImpl{
+		Dao: &model.TopicsDaoDynamoImpl{DynamoClient: mockDynamo, UUID: &UUIDMock{}},
 	}
+	topic := &model.Topic{Name: "topic", Engine: "AWS", CreatedAt: model.Clock.Now()}
+	topic2 := &model.Topic{Name: "topic2", Engine: "AWS", CreatedAt: model.Clock.Now()}
+	topicItem, _ := dynamodbattribute.MarshalMap(topic)
+	topicItem2, _ := dynamodbattribute.MarshalMap(topic2)
+	router := server.GetRouter()
 
+	t.Run("it should return the topics list", func(t *testing.T) {
+		mockDynamo.On("Scan", mock.MatchedBy(func(input *dynamodb.ScanInput) bool {
+			return *input.TableName == "Topics"
+		})).Return(
+			&dynamodb.ScanOutput{
+				Items: []map[string]*dynamodb.AttributeValue{topicItem, topicItem2},
+			}, nil,
+		).Once()
+
+		res := executeMockedRequest(router, "GET", "/topics", "")
+
+		assert.Equal(t, 200, res.Code)
+		assert.JSONEq(t,
+			fmt.Sprintf(`{"topics": [{"name":"topic","engine":"AWS","created_at":"%s"}, 
+						{"name":"topic2","engine":"AWS","created_at":"%s"}]}`,
+				model.Clock.Now().Format("2006-01-02T15:04:05Z"), model.Clock.Now().Format("2006-01-02T15:04:05Z")),
+			res.Body.String())
+		mockDynamo.AssertExpectations(t)
+
+	})
+
+	t.Run("it fail returning the topics list if a dynamodb error happend", func(t *testing.T) {
+		mockDynamo.On("Scan", mock.MatchedBy(func(input *dynamodb.ScanInput) bool {
+			return *input.TableName == "Topics"
+		})).Return(
+			&dynamodb.ScanOutput{
+				Items: nil,
+			}, errors.New("Dynamodb error"),
+		).Once()
+
+		res := executeMockedRequest(router, "GET", "/topics", "")
+
+		assert.Equal(t, 500, res.Code)
+		assert.JSONEq(t, `{"status": 500, "code":"database_error", "message":"Dynamodb error"}`,
+			res.Body.String())
+		mockDynamo.AssertExpectations(t)
+
+	})
 }
