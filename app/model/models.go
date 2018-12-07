@@ -25,7 +25,7 @@ type Topic struct {
 	ID            uint      `gorm:"primary_key" json:"-"`
 	Name          string    `gorm:"not null;unique" json:"name" example:"topic_name"`
 	Engine        string    `json:"engine" example:"AWS"`
-	ResourceID    string    `json:"resource_id"`
+	ResourceID    string    `json:"resource_id,omitempty"`
 	SecurityToken string    `json:"security_token,omitempty"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"-"`
@@ -196,5 +196,3 @@ type UUIDImpl struct {
 func (u UUIDImpl) GetUUID() string {
 	return uuid.NewV4().String()
 }
-
-

@@ -17,7 +17,7 @@ var EngineService client.EngineService
 
 // Create godoc
 // @Summary Add a topic
-// @Description add by json a topic
+// @Description It creates a new topic in Bondi. The security_token field should be saved for publishing.
 // @Tags topics
 // @Accept json
 // @Produce json
@@ -49,7 +49,7 @@ func (t TopicController) Create(c *gin.Context) {
 // @Produce json
 // @Param topic path string true "The name of the Topic"
 // @Success 200 {object} model.Topic
-// @Failure 404 {object} errors.APIError
+// @Failure 404 {object} errors.APIError "The topic doesn't exist"
 // @Failure 500 {object} errors.APIError
 // @Router /topics/{topic} [get]
 // @OperationId get-topic

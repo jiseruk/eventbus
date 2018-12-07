@@ -107,7 +107,7 @@ func TestCreateSubscription(t *testing.T) {
 		rec := executeMockedRequest(router, "POST", "/subscribers", `{"topic": "topic", "name":"subs", "endpoint":"http://subscriber/endp", "type":"push"}`)
 
 		assert.Equal(t, 201, rec.Code)
-		assert.JSONEq(t, `{"topic": "topic", "name":"subs", "endpoint":"http://subscriber/endp", "type":"push", "dead_letter_queue":"queueUrl"}`,
+		assert.JSONEq(t, `{"topic": "topic", "name":"subs", "endpoint":"http://subscriber/endp", "type":"push"}`,
 			rec.Body.String())
 
 		topicServiceMock.AssertExpectations(t)
@@ -168,7 +168,7 @@ func TestCreateSubscription(t *testing.T) {
 		rec := executeMockedRequest(router, "POST", "/subscribers", `{"topic": "topic", "name":"subs", "type":"pull", "visibility_timeout":10}`)
 
 		assert.Equal(t, 201, rec.Code)
-		assert.JSONEq(t, `{"topic": "topic", "name":"subs", "type":"pull", "pulling_queue":"queueUrl", "visibility_timeout":10}`,
+		assert.JSONEq(t, `{"topic": "topic", "name":"subs", "type":"pull", "visibility_timeout":10}`,
 			rec.Body.String())
 
 		topicServiceMock.AssertExpectations(t)

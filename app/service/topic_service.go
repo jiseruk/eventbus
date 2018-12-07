@@ -41,6 +41,7 @@ func (t TopicServiceImpl) CreateTopic(name string, engine client.EngineService) 
 
 		return nil, errors.NewAPIError(http.StatusInternalServerError, "database_create_topic_error", err.Error())
 	} else {
+		topic.ResourceID = ""
 		return topic, nil
 	}
 }
@@ -65,5 +66,6 @@ func (t TopicServiceImpl) GetTopic(name string, adminToken ...string) (*model.To
 			break
 		}
 	}
+	topic.ResourceID = ""
 	return topic, nil
 }

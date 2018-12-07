@@ -42,7 +42,7 @@ func (t SubscriptionController) Create(c *gin.Context) {
 // Consume godoc
 // @Name consume-messages
 // @Summary Consume pending messages
-// @Description consume pending messages from the subscriber's dead letter queue
+// @Description consume pending messages from the push subscriber's dead letter queue or the pull subscriber's normal queue
 // @Tags subscribers
 // @Accept json
 // @Produce json
@@ -68,8 +68,8 @@ func (t SubscriptionController) Consume(c *gin.Context) {
 }
 
 // DeleteMessages godoc
-// @Summary Delete messages from Dead Letter Queue
-// @Description delete already processed messages from the subscriber's dead letter queue
+// @Summary Delete messages from [Dead Letter Queue (Push Subscribers) / Queue (Pull Subscribers)]
+// @Description delete already processed messages from the subscriber's dead letter queue or the normal queue, depending of the type of subscriber.
 // @Tags subscribers
 // @Accept json
 // @Produce json

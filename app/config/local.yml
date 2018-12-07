@@ -1,3 +1,6 @@
+bondi:
+  endpoint: localhost:8080
+
 engines:
   AWS:
     region: us-east-1

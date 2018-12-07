@@ -15,13 +15,14 @@ type PublisherController struct {
 
 // Publish godoc
 // @Summary Publish a message in a topic
-// @Description add by json a message in a topic
+// @Description add by json a message in a topic. The 'X-Publish-Token: $security_token' header is mandatory.
 // @Tags publishers
 // @Accept json
 // @Produce json
 // @Param body body model.PublishMessage true "The message to publish"
 // @Success 201 {object} model.PublishMessage
 // @Failure 400 {object} errors.APIError
+// @Failure 401 {object} errors.APIError "The X-Publish-Token header is invalid"
 // @Failure 500 {object} errors.APIError
 // @Router /messages [post]
 func (t PublisherController) Publish(c *gin.Context) {
@@ -39,7 +40,7 @@ func (t PublisherController) Publish(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "json_error", "The request body is not a valid json"))
 		return
 	}
-	
+
 	messageOutput, err := service.PublishersService.Publish(message, securityToken)
 	if err != nil {
 		c.JSON(err.Status, err)
