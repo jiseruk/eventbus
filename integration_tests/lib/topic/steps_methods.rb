@@ -32,6 +32,12 @@ module Topic
 			parsed_response["name"] == name
 		end
 
+		def has_security_token?
+			byebug
+			!!parsed_response
+			true
+		end
+
 		def create_topic
 			name = random_topic_name
 			post_topic topic_name: name

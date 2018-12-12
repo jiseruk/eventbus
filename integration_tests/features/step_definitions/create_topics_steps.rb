@@ -66,17 +66,19 @@ end
 
 
 Entonces("debo obtener una respuesta de aceptado") do
+  byebug
   message = response_message
   code = status_code
   fail "Se obtuvo: #{code}
   #{response_message}" unless success?
 end
 
-Entonces("debo recibir los datos de id, fecha de creacion y nombre de topico") do
+Entonces("debo recibir los datos de id, fecha de creacion, nombre de topico y token de seguridad") do
   not_found = []
   not_found << "No se encontró id de creacion" unless has_topic_id?
   not_found << "No se encontró la fecha de creación" unless has_creation_date?
   not_found << "No se encontó el nombre del topico #{@topic_name}" unless has_topic_name? @topic_name
+  not_found << "No se encontó el token de seguridad" unless has_security_token?
   fail "#{not_found}" unless not_found.empty?
 end
 

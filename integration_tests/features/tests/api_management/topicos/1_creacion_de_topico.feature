@@ -17,7 +17,7 @@ Escenario: Creación correcta de un tópico
 	Dado que deseo generar un tópico nuevo
 	Cuando ingreso los datos requeridos del tópico
 	Entonces debo obtener una respuesta de aceptado
-	Y debo recibir los datos de id, fecha de creacion y nombre de topico
+	Y debo recibir los datos de id, fecha de creacion, nombre de topico y token de seguridad
 
 Escenario: Creación de un tópico existente
 	Dado un tópico existente en el event bus
