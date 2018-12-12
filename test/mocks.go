@@ -14,8 +14,8 @@ import (
 	"github.com/wenance/wequeue-management_api/app/model"
 )
 
-func getTopicMock(name string, engine string, resource string) *model.Topic {
-	topic := model.Topic{ResourceID: resource, Name: name, Engine: engine}
+func getTopicMock(name string, engine string, resource string, owner string, description string) *model.Topic {
+	topic := model.Topic{ResourceID: resource, Name: name, Engine: engine, Owner: owner, Description: description}
 	topic.CreatedAt = model.Clock.Now()
 	topic.UpdatedAt = model.Clock.Now()
 	topic.SecurityToken = UUIDMock{}.GetUUID()

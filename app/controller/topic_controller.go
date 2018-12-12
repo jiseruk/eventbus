@@ -33,7 +33,7 @@ func (t TopicController) Create(c *gin.Context) {
 		return
 	}
 	engine := client.GetEngineService(json.Engine)
-	topic, err := service.TopicsService.CreateTopic(json.Name, engine)
+	topic, err := service.TopicsService.CreateTopic(json.Name, json.Owner, json.Description, engine)
 	if err != nil {
 		c.JSON(err.Status, err)
 		return
@@ -68,4 +68,26 @@ func (t TopicController) Get(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, &topic)
+}
+
+// List godoc
+// @Summary List topics
+// @Description List all the topics information
+// @Tags topics
+// @Accept json
+// @Produce json
+// @Success 200 {object} model.Topic
+// @Failure 404 {object} errors.APIError "The topic doesn't exist"
+// @Failure 500 {object} errors.APIError
+// @Router /topics [get]
+// @OperationId list-topic
+func (t TopicController) List(c *gin.Context) {
+	//adminToken := c.GetHeader("X-Admin-Token")
+	topics, apierr := service.TopicsService.ListTopics()
+	if apierr != nil {
+		c.JSON(apierr.Status, &apierr)
+		return
+	}
+
+	c.JSON(http.StatusOK, &gin.H{"topics": topics})
 }
