@@ -34,27 +34,38 @@ end
 
 
 Cuando("intento crear un tópico con el nombre del existente") do
-  post_topic(topic_name: @topic_name)
+  post_topic(topic_name: @topic_name, engine: "AWS", description: "Some description", owner: random_word)
 end
 
 Cuando("ingreso los datos requeridos del tópico") do
-  post_topic(topic_name: @topic_name, engine: "AWS")
+  post_topic(topic_name: @topic_name, engine: "AWS", description: "Some description", owner: random_word)
 end
 
 Cuando("ingreso los datos sin pasar el nombre") do
-  post_topic(topic_name:"")
+  post_topic(topic_name:"", engine: "AWS", description: "Some description", owner: random_word)
 end
 
 Cuando("ingreso los datos sin pasar el engine") do
-  post_topic(topic_name:@topic_name, engine: "")
+  post_topic(topic_name:@topic_name, engine: "", description: "Some description", owner: random_word)
 end
 
 Cuando("ingreso los datos con un engine que no existe") do
-  @engine = "sarasa"
-  post_topic(topic_name:@topic_name, engine: @engine)
+  @engine = random_word
+  post_topic(topic_name:@topic_name, engine: @engine, description: "Some description", owner: random_word)
 end
 
 
+Cuando("ingreso los datos sin pasar la descripcion") do
+  post_topic(topic_name: @topic_name, engine: "AWS", owner: random_word)
+end
+
+Cuando("ingreso los datos sin el owner del topico") do
+  post_topic(topic_name: @topic_name, engine: "AWS", description: "Some description")
+end
+
+Cuando("ingreso la solicitud sin pasar ningún dato") do
+  post_topic(topic_name:nil, engine:nil, description:nil, owner:nil)
+end
 
 
 
@@ -66,19 +77,19 @@ end
 
 
 Entonces("debo obtener una respuesta de aceptado") do
-  byebug
   message = response_message
   code = status_code
   fail "Se obtuvo: #{code}
   #{response_message}" unless success?
 end
 
-Entonces("debo recibir los datos de id, fecha de creacion, nombre de topico y token de seguridad") do
+Entonces("debo recibir los datos de fecha de creacion, nombre de topico, token de seguridad, owner y descripcion") do
   not_found = []
-  not_found << "No se encontró id de creacion" unless has_topic_id?
   not_found << "No se encontró la fecha de creación" unless has_creation_date?
   not_found << "No se encontó el nombre del topico #{@topic_name}" unless has_topic_name? @topic_name
   not_found << "No se encontó el token de seguridad" unless has_security_token?
+  not_found << "No se encontó el engine" unless has_engine?
+  not_found << "No se encontó la descripcion" unless has_description?
   fail "#{not_found}" unless not_found.empty?
 end
 
@@ -123,6 +134,7 @@ end
 
 
 Entonces("debo recibir una respuesta de suscripción correta") do
+  byebug
   fail "No se recibió la respuesta correcta" unless subscribed?
 end
 
@@ -157,3 +169,23 @@ Entonces("todas las suscripciones deben resultar correctas") do
 Se obtuvo los status code siguientes: #{@suscriptions}" unless @suscriptions.uniq == [201]
 end
 
+Entonces("debo obtener una respuesa que indique que la descripcion es obligatoria") do
+  expected_msg = "description: The field is required."
+  got = response_message
+  fail "Se esperaba el mensaje: '#{expected_msg}'.
+  Se obtuvo '#{got}'" unless got == expected_msg
+end
+
+Entonces("debo obtener una respuesa que indique que el owner del topico es obligatorio") do
+  expected_msg = "owner: The field is required."
+  got = response_message
+  fail "Se esperaba el mensaje: '#{expected_msg}'.
+  Se obtuvo '#{got}'" unless got == expected_msg
+end
+
+Entonces("debo obtener una respuesa que indique que el nombre, el nombre, el engine, la descripcion y el owner son obligatorio") do
+  expected_msg = "description: The field is required; engine: The field is required; name: The field is required; owner: The field is required."
+  got = response_message
+  fail "Se esperaba el mensaje: '#{expected_msg}'.
+  Se obtuvo '#{got}'" unless got == expected_msg
+end

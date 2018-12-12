@@ -47,6 +47,7 @@ Cuando("intento suscribirme a un tópico sin pasar el modo de suscripcion") do
 end
 
 Cuando(/me suscribo en modo (push|pull) al tópico correctamente/) do |type|
+  byebug
   create_a_subscription_of_type(type)
 end
 

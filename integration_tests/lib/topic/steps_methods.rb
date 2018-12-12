@@ -11,17 +11,15 @@ module Topic
 
 		def post_topic(opts)
 			name = opts.delete(:topic_name)
-			engine = opts.delete(:engine) || "AWS"
-			body = {"name" => name, "engine" => engine}
+			engine = opts.delete(:engine)
+			owner = opts.delete(:owner)
+			description = opts.delete(:description)
+			body = {"name" => name, "engine" => engine, "owner" => owner, "description" => description}
 			@response = $eb_connector.post_topic body
 		end
 
 		def success?
 			response.status.success?
-		end
-
-		def has_topic_id?
-			!!parsed_response['resource_id']
 		end
 
 		def has_creation_date?
@@ -33,14 +31,20 @@ module Topic
 		end
 
 		def has_security_token?
-			byebug
-			!!parsed_response
-			true
+			!!parsed_response['security_token']
+		end
+
+		def has_engine?
+			!!parsed_response['engine']
+		end
+		
+		def has_description?
+			!!parsed_response['description']
 		end
 
 		def create_topic
 			name = random_topic_name
-			post_topic topic_name: name
+			post_topic topic_name: name, description: random_word, owner: random_word, engine: "AWS"
 			name
 		end
 
