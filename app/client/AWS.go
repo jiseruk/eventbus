@@ -245,7 +245,6 @@ func (azn AWSEngine) CreatePullSubscriber(topic model.Topic, subscriber string, 
 		//TODO: Borrar Queue
 		return nil, err
 	}
-
 	output, err := azn.SNSClient.Subscribe(&sns.SubscribeInput{TopicArn: &topic.ResourceID,
 		Protocol: aws.String("sqs"),
 		Endpoint: qattrs.Attributes["QueueArn"]},

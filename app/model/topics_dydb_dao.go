@@ -51,7 +51,6 @@ func (t *TopicsDaoDynamoImpl) GetTopic(name string) (*Topic, error) {
 	if err != nil || output.Item == nil {
 		return nil, err
 	}
-
 	var topic Topic
 	err = dynamodbattribute.UnmarshalMap(output.Item, &topic)
 	if err != nil {
