@@ -8,7 +8,7 @@ end
 
 Dado("que voy a notificar un evento a un tópico inexistente") do
   @sent_event = random_event_for_topic("Unknown-topic-#{Time.now.to_i}")
-  send_event(@sent_event)
+  send_event(@sent_event, some_header)
 end
 
 Dado("que estuve sin atender eventos por un tiempo debido a X motivo") do
@@ -18,13 +18,13 @@ end
 Dado("que se notificó un evento a un topico que estoy suscripto") do
   @sent_event = random_event_for_topic(@topic_name)
   puts @sent_event if $debug
-  send_event(@sent_event)
+  send_event(@sent_event, security_header)
 end
 
 Dado("que se notificó un evento a un topico que estoy suscripto en modo pull con visibilidad de 5 segundos") do
   @sent_event = random_event_for_topic(@topic_name, 5)
   puts @sent_event if $debug
-  send_event(@sent_event)
+  send_event(@sent_event, security_header)
 end
 
 Dado("se envía un evento al topico con visibilidad de {int} segundos") do |int|
@@ -34,7 +34,7 @@ end
 Dado("se envía un evento al topico") do
   @sent_event = random_event_for_topic(@topic_name, 5)
   puts @sent_event if $debug
-  send_event(@sent_event)
+  send_event(@sent_event, security_header)
 end
 
 
@@ -48,17 +48,22 @@ end
 
 Cuando("envío una notificación al tópico") do
   @sent_event = random_event_for_topic(@topic_name)
+  send_event(@sent_event, security_header)
+end
+
+Cuando("envío una notificación al tópico sin pasar el token de seguridad") do
+  @sent_event = random_event_for_topic(@topic_name)
   send_event(@sent_event)
 end
 
 Cuando("envío una notificación al tópico inexistente") do
   @sent_event = random_event_for_topic('unknown-topic')
-  send_event(@sent_event)
+  send_event(@sent_event, security_header)
 end
 
 Cuando("envío una notificación sin indicar el tópico") do
   @sent_event = random_event_for_topic()
-  send_event(@sent_event)
+  send_event(@sent_event, security_header)
 end
 
 Cuando("envío una notificación sin el payload") do
@@ -70,13 +75,13 @@ end
 Cuando("envío una notificación con un payload vacío") do
   @sent_event = random_event_for_topic(@topic_name)
   @sent_event['payload']={}
-  send_event(@sent_event)
+  send_event(@sent_event, security_header)
 end
 
 Cuando("envío una notificación con un payload que no es JSON") do
   @sent_event = random_event_for_topic(@topic_name)
   @sent_event['payload']="Un string que no es JSOn"
-  send_event(@sent_event)
+  send_event(@sent_event, security_header)
 end
 
 Cuando("consulto los mensajes sin indicar quien soy") do

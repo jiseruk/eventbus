@@ -21,7 +21,7 @@ Escenario: Suscripición exitosa a un topico en modo pull
 	Dado un tópico existente
 	Cuando me suscribo en modo pull al tópico correctamente
 	Entonces debo recibir una respuesta de suscripción correta
-	Y la respuesta debe tener los valores 'name, pulling_queue, topic, type, visibility_timeout'
+	Y la respuesta debe tener los valores 'name, topic, type, visibility_timeout'
 
 Escenario: Suscripción a tópico inexistente
 	Cuando me suscribo en modo pull a un tópico que no existe

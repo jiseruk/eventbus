@@ -10,8 +10,8 @@ Característica: Suscripción a tópico de tipo push
 # endpoint: /subscriptions
 
 # 	body = {
-# 		"topic" : "topic_name", 
-# 		"name" : "subscriber name",
+#     "topic" : "topic_name", 
+#     "name" : "subscriber name",
 #     "type" : "push",
 #     "endpoint" : "/host:port/something"
 # 	}
@@ -21,7 +21,7 @@ Escenario: Suscripición exitosa a un topico en modo push
 	Dado un tópico existente
 	Cuando me suscribo en modo push al tópico correctamente
 	Entonces debo recibir una respuesta de suscripción correta
-	Y la respuesta debe tener los valores 'name, endpoint, topic, dead_letter_queue, type'
+	Y la respuesta debe tener los valores 'endpoint, name, topic, type'
 
 Escenario: Suscripción a tópico inexistente
 	Cuando me suscribo en modo push a un tópico que no existe

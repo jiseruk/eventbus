@@ -134,7 +134,6 @@ end
 
 
 Entonces("debo recibir una respuesta de suscripción correta") do
-  byebug
   fail "No se recibió la respuesta correcta" unless subscribed?
 end
 
