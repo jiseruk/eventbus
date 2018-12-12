@@ -56,7 +56,7 @@ func GetClient() dynamodbiface.DynamoDBAPI {
 				},
 			},
 			ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
-				ReadCapacityUnits:  aws.Int64(50),
+				ReadCapacityUnits:  aws.Int64(5),
 				WriteCapacityUnits: aws.Int64(5),
 			},
 		})
@@ -76,7 +76,7 @@ func GetClient() dynamodbiface.DynamoDBAPI {
 				},
 			},
 			ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
-				ReadCapacityUnits:  aws.Int64(50),
+				ReadCapacityUnits:  aws.Int64(5),
 				WriteCapacityUnits: aws.Int64(5),
 			},
 		})

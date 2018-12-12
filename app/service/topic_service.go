@@ -67,7 +67,6 @@ func (t TopicServiceImpl) GetTopic(name string, adminToken ...string) (*model.To
 			break
 		}
 	}
-	topic.ResourceID = ""
 	return topic, nil
 }
 

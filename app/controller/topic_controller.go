@@ -66,7 +66,7 @@ func (t TopicController) Get(c *gin.Context) {
 		c.JSON(http.StatusNotFound, errors.NewAPIError(http.StatusNotFound, "database_error", "The topic "+topicName+" doesn't exist"))
 		return
 	}
-
+	topic.ResourceID = ""
 	c.JSON(http.StatusOK, &topic)
 }
 

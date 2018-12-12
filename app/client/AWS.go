@@ -208,7 +208,7 @@ func (azn AWSEngine) CreatePushSubscriber(topic model.Topic, subscriber string, 
 	})
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating subscriber")
+		return nil, errors.Wrap(err, "Error creating subscriber for topic ["+topic.ResourceID+"]")
 	}
 
 	if config.GetBool("engines.AWS.lambda.createPolicy") {
@@ -245,14 +245,13 @@ func (azn AWSEngine) CreatePullSubscriber(topic model.Topic, subscriber string, 
 		//TODO: Borrar Queue
 		return nil, err
 	}
-
 	output, err := azn.SNSClient.Subscribe(&sns.SubscribeInput{TopicArn: &topic.ResourceID,
 		Protocol: aws.String("sqs"),
 		Endpoint: qattrs.Attributes["QueueArn"]},
 	)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating subscriber")
+		return nil, errors.Wrap(err, "Error creating subscriber for topic ["+topic.ResourceID+"]")
 	}
 
 	_, err = azn.SQSClient.SetQueueAttributes(&sqs.SetQueueAttributesInput{
