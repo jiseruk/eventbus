@@ -9,7 +9,10 @@ func GetRouter() *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
+	//router.RedirectTrailingSlash = false
+
 	SetNewrelic(router)
+
 	topics := controller.TopicController{}
 	subscribers := controller.SubscriptionController{}
 	publishers := controller.PublisherController{}
@@ -17,7 +20,15 @@ func GetRouter() *gin.Engine {
 
 	router.GET("/ping", health.Ping)
 	router.POST("/topics", topics.Create)
+	router.GET("/topics", topics.List)
 	router.GET("/topics/:topic", topics.Get)
+	/* func(c *gin.Context) {
+		if c.Param("topic") == "" {
+			topics.List(c)
+			return
+		}
+		topics.Get(c)
+	})*/
 	router.POST("/subscribers", subscribers.Create)
 	router.GET("/messages", subscribers.Consume)
 	router.DELETE("/messages", subscribers.DeleteMessages)
