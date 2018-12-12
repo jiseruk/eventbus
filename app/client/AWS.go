@@ -153,7 +153,6 @@ func (azn *AWSEngine) CreateTopic(name string) (*CreateTopicOutput, error) {
 	var input = &sns.CreateTopicInput{Name: aws.String(GetAWSResourcePrefix() + name)}
 	snsoutput, err := azn.SNSClient.CreateTopic(input)
 	if err != nil {
-		fmt.Printf("Error: %#v", err)
 		return nil, err
 	}
 	output := &CreateTopicOutput{Resource: *snsoutput.TopicArn}
@@ -252,7 +251,7 @@ func (azn AWSEngine) CreatePullSubscriber(topic model.Topic, subscriber string, 
 	)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating subscriber")
+		return nil, errors.Wrap(err, "Error creating subscriber for topic ["+topic.ResourceID+"]")
 	}
 
 	_, err = azn.SQSClient.SetQueueAttributes(&sqs.SetQueueAttributesInput{

@@ -22,6 +22,13 @@ func getTopicMock(name string, engine string, resource string, owner string, des
 	return &topic
 }
 
+func getSubscriberMock(name string, topic string, Type string, resource string) *model.Subscriber{
+	subscriber := model.Subscriber{Name: name, Topic: topic, Type: Type, ResourceID: resource}
+	subscriber.CreatedAt = model.Clock.Now()
+	subscriber.UpdatedAt = model.Clock.Now()
+	return &subscriber
+}
+
 func getLambdaMock(endpoint string, subscriber string, topic string, dlqArn string) *lambda.CreateFunctionInput {
 	contents, err := ioutil.ReadFile("/tmp/function.zip")
 	if err != nil {
