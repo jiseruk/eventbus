@@ -62,7 +62,6 @@ func (t TopicController) Get(c *gin.Context) {
 		c.JSON(apierr.Status, &apierr)
 		return
 	}
-
 	topic.ResourceID = ""
 	c.JSON(http.StatusOK, &topic)
 }
@@ -109,7 +108,7 @@ func (t TopicController) Delete(c *gin.Context) {
 		c.JSON(apierr.Status, &apierr)
 		return
 	}
-	
+
 	c.JSON(http.StatusNoContent, nil)
 }
 
