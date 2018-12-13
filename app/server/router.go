@@ -22,6 +22,8 @@ func GetRouter() *gin.Engine {
 	router.POST("/topics", topics.Create)
 	router.GET("/topics", topics.List)
 	router.GET("/topics/:topic", topics.Get)
+	router.DELETE("/topics/:topic", topics.Delete)
+	router.GET("/topics/:topic/subscribers", topics.GetTopicSubscriptions)
 	/* func(c *gin.Context) {
 		if c.Param("topic") == "" {
 			topics.List(c)
@@ -30,6 +32,7 @@ func GetRouter() *gin.Engine {
 		topics.Get(c)
 	})*/
 	router.POST("/subscribers", subscribers.Create)
+	router.GET("/subscribers/:subscriber", subscribers.Get)
 	router.GET("/messages", subscribers.Consume)
 	router.DELETE("/messages", subscribers.DeleteMessages)
 	router.POST("/messages", publishers.Publish)

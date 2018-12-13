@@ -49,9 +49,9 @@ func (t Topic) Validate() error {
 type Subscriber struct {
 	ID                uint      `gorm:"primary_key" json:"-"`
 	Name              string    `gorm:"not null;unique" json:"name" example:"subscriber_name"`
-	ResourceID        string    `json:"-"`
+	ResourceID        string    `json:"resource_id,omitempty"`
 	Endpoint          *string   `gorm:"unique" json:"endpoint,omitempty" example:"http://subscriber.wequeue.com/subscriber"`
-	Topic             string    `json:"topic" example:"topic_name"`
+	Topic             string    `json:"topic,omitempty" example:"topic_name"`
 	Type              string    `json:"type"`
 	DeadLetterQueue   string    `json:"dead_letter_queue,omitempty"`
 	PullingQueue      string    `json:"pulling_queue,omitempty"`

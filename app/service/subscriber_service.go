@@ -13,7 +13,9 @@ type SubscriptionService interface {
 	CreateSubscription(name string, endpoint *string, topic string, Type string, visibilityTimeout *int) (*model.Subscriber, *errors.APIError)
 	ConsumeMessages(subscriber string, maxCount int64) (*model.Messages, *errors.APIError)
 	DeleteMessages(subscriber string, messages []model.Message) (*model.Messages, *errors.APIError)
-	DeleteSubscription(name string) *errors.APIError
+	//DeleteSubscription(name string) *errors.APIError
+	GetTopicSubscriptions(topic string) ([]model.Subscriber, *errors.APIError)
+	GetSubscription(name string) (*model.Subscriber, *errors.APIError)
 }
 
 type SubscriptionServiceImpl struct {
@@ -113,5 +115,31 @@ func (s SubscriptionServiceImpl) DeleteMessages(subscriber string, messages []mo
 }
 
 func (s SubscriptionServiceImpl) DeleteSubscription(name string) *errors.APIError {
+
 	return nil
+}
+func (s SubscriptionServiceImpl) GetSubscription(name string) (*model.Subscriber, *errors.APIError) {
+	subscriber, err := s.Dao.GetSubscription(name)
+	if err != nil {
+		return nil, errors.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
+	}
+	if subscriber == nil {
+		return nil, errors.NewAPIError(http.StatusNotFound, "not_found_error", "The subscriber "+name+" doesn't exist")
+	}
+	subscriber.ResourceID = ""
+	subscriber.DeadLetterQueue = ""
+	subscriber.PullingQueue = ""
+	return subscriber, nil
+}
+func (s SubscriptionServiceImpl) GetTopicSubscriptions(topic string) ([]model.Subscriber, *errors.APIError) {
+	_, apierr := TopicsService.GetTopic(topic)
+	if apierr != nil {
+		return nil, apierr
+	}
+
+	subscribers, err := s.Dao.GetSubscriptionsByTopic(topic)
+	if err != nil {
+		return nil, errors.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
+	}
+	return subscribers, nil
 }

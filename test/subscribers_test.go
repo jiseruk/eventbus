@@ -502,6 +502,47 @@ func TestDeleteMessages(t *testing.T) {
 
 }
 
+func TestGetSubscription(t *testing.T) {
+	model.Clock = clockwork.NewFakeClock()
+	router := server.GetRouter()
+	subscriber := getSubscriberMock("subs", "topic", "push", "arn:subs")
+	subscriberItem, _ := dynamodbattribute.MarshalMap(subscriber)
+	mockDynamo := &DynamoDBAPIMock{}
+	service.SubscriptionsService = service.SubscriptionServiceImpl{
+		Dao: &model.SubscriberDaoDynamoImpl{
+			DynamoClient: mockDynamo,
+		},
+	}
+	t.Run("it should return the subscriber information", func(t *testing.T) {
+		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
+			return *input.Key["name"].S == "subs" && *input.TableName == "Subscribers"
+		})).Return(&dynamodb.GetItemOutput{Item: subscriberItem}, nil).Once()
+
+		res := executeMockedRequest(router, "GET", "/subscribers/subs", "")
+		assert.Equal(t, 200, res.Code)
+		assert.JSONEq(t, `{"name":"subs","type":"push","topic":"topic"}`, res.Body.String())
+	})
+
+	t.Run("it should return not found error if the subscriber doesn't exist", func(t *testing.T) {
+		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
+			return *input.Key["name"].S == "subs" && *input.TableName == "Subscribers"
+		})).Return(&dynamodb.GetItemOutput{Item: nil}, nil).Once()
+
+		res := executeMockedRequest(router, "GET", "/subscribers/subs", "")
+		assert.Equal(t, 404, res.Code)
+		assert.JSONEq(t, `{"message":"The subscriber subs doesn't exist","code":"not_found_error","status":404}`, res.Body.String())
+	})
+
+	t.Run("it should return an error if a dynamodb.GetItem() error happend", func(t *testing.T) {
+		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
+			return *input.Key["name"].S == "subs" && *input.TableName == "Subscribers"
+		})).Return(&dynamodb.GetItemOutput{Item: nil}, errors.New("Dynamodb error")).Once()
+
+		res := executeMockedRequest(router, "GET", "/subscribers/subs", "")
+		assert.Equal(t, 500, res.Code)
+		assert.JSONEq(t, `{"message":"Dynamodb error","code":"database_error","status":500}`, res.Body.String())
+	})
+}
 func TestMessage(t *testing.T) {
 
 	msg := fmt.Sprintf(`{"Message":{"payload":{"hola":"lala"},"timestamp":%d,"topic":"topic"},"MessageId":"1","Type":"Notification","TopicArn":"arn:topic"}`, clockwork.NewFakeClock().Now().UnixNano())

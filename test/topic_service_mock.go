@@ -35,6 +35,29 @@ func (_m *TopicServiceMock) CreateTopic(name string, owner string, description s
 	return r0, r1
 }
 
+// DeleteTopic provides a mock function with given fields: name, adminToken
+func (_m *TopicServiceMock) DeleteTopic(name string, adminToken ...string) *errors.APIError {
+	_va := make([]interface{}, len(adminToken))
+	for _i := range adminToken {
+		_va[_i] = adminToken[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, name)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	var r0 *errors.APIError
+	if rf, ok := ret.Get(0).(func(string, ...string) *errors.APIError); ok {
+		r0 = rf(name, adminToken...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*errors.APIError)
+		}
+	}
+
+	return r0
+}
+
 // GetTopic provides a mock function with given fields: name, adminToken
 func (_m *TopicServiceMock) GetTopic(name string, adminToken ...string) (*model.Topic, *errors.APIError) {
 	_va := make([]interface{}, len(adminToken))

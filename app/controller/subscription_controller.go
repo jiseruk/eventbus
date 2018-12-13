@@ -39,6 +39,29 @@ func (t SubscriptionController) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, &subscriber)
 }
 
+// Get godoc
+// @Summary Get a subscriber
+// @Description Get the subscriber information
+// @Tags subscribers
+// @Accept json
+// @Produce json
+// @Param body body model.Subscriber true "Subscriber to a topic"
+// @Success 200 {object} model.Subscriber
+// @Failure 404 {object} errors.APIError
+// @Failure 500 {object} errors.APIError
+// @Router /subscribers/:subscriber [get]
+func (t SubscriptionController) Get(c *gin.Context) {
+	subscriberName := c.Param("subscriber")
+
+	subscriber, err := service.SubscriptionsService.GetSubscription(subscriberName)
+	if err != nil {
+		c.JSON(err.Status, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, &subscriber)
+}
+
 // Consume godoc
 // @Name consume-messages
 // @Summary Consume pending messages
