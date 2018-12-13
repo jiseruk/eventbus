@@ -116,7 +116,6 @@ module Topic
 
 		def subscribers
 			res = "bla"
-			byebug
 			parsed_response
 			res
 		end

@@ -1,37 +1,37 @@
-Dado("que voy a notificar un evento cualquiera") do
+Dado("que voy a notificar un mensaje cualquiera") do
   # do nothing
 end
 
-Dado("que voy notificar un evento a un tópico existente") do
+Dado("que voy notificar un mensaje a un tópico existente") do
   @topic_name = create_topic
 end
 
-Dado("que voy a notificar un evento a un tópico inexistente") do
+Dado("que voy a notificar un mensaje a un tópico inexistente") do
   @sent_event = random_event_for_topic("Unknown-topic-#{Time.now.to_i}")
   send_event(@sent_event, some_header)
 end
 
-Dado("que estuve sin atender eventos por un tiempo debido a X motivo") do
+Dado("que estuve sin atender mensajes por un tiempo debido a X motivo") do
   # do nothing
 end
 
-Dado("que se notificó un evento a un topico que estoy suscripto") do
+Dado("que se notificó un mensaje a un topico que estoy suscripto") do
   @sent_event = random_event_for_topic(@topic_name)
   puts @sent_event if $debug
   send_event(@sent_event, security_header)
 end
 
-Dado("que se notificó un evento a un topico que estoy suscripto en modo pull con visibilidad de 5 segundos") do
+Dado("que se notificó un mensaje a un topico que estoy suscripto en modo pull con visibilidad de 5 segundos") do
   @sent_event = random_event_for_topic(@topic_name, 5)
   puts @sent_event if $debug
   send_event(@sent_event, security_header)
 end
 
-Dado("se envía un evento al topico con visibilidad de {int} segundos") do |int|
+Dado("se envía un mensaje al topico con visibilidad de {int} segundos") do |int|
   pending # Write code here that turns the phrase above into concrete actions
 end
 
-Dado("se envía un evento al topico") do
+Dado("se envía un mensaje al topico") do
   @sent_event = random_event_for_topic(@topic_name, 5)
   puts @sent_event if $debug
   send_event(@sent_event, security_header)
@@ -57,6 +57,7 @@ Cuando("envío una notificación al tópico sin pasar el token de seguridad") do
 end
 
 Cuando("envío una notificación al tópico inexistente") do
+  byebug
   @sent_event = random_event_for_topic('unknown-topic')
   send_event(@sent_event, security_header)
 end
@@ -134,9 +135,9 @@ Entonces("debo obtener el mensaje de error que el tópico no existe") do
   #{expected_msg}" unless got == expected_msg
 end
 
-Entonces("los sucriptores debe recibir dicho evento") do
+Entonces("los sucriptores debe recibir dicho mensaje") do
   unless event_transmitted?
-    fail "No se recibió el evento o el recibido no es lo esperado.
+    fail "No se recibió el mensaje o el recibido no es lo esperado.
     Enviado: #{sent_event}
     Esperado: #{last_event}"
   end

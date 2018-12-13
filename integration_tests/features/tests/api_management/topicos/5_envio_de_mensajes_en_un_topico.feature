@@ -1,8 +1,8 @@
 # language: es
-Característica: Creación de un evento en un tópico
+Característica: Envío de mensajes en un tópico
 	Como una aplicación que es owner de un tópico
-	Cuando envía un evento a dicho tópico
-	Quiere enviar la notificación
+	Cuando envía mensajes a dicho tópico
+	Quiere que los mensajes puedan ser leídos por sus subscriptores
 
 
 # method: POST
@@ -14,50 +14,50 @@ Característica: Creación de un evento en un tópico
 # 	}
 
 
-Escenario: Envio de evento a un tópico existente para suscriptores push
+Escenario: Envio de mensaje a un tópico existente para suscriptores push
 	Dado que soy owner de un tópico
 	Y el tópico tienen suscriptores de tipo push
 	Cuando envío una notificación al tópico
-	Entonces los sucriptores debe recibir dicho evento
+	Entonces los sucriptores debe recibir dicho mensaje
 
-Escenario: Envio de evento a un tópico existente para suscriptores pull
+Escenario: Envio de mensaje a un tópico existente para suscriptores pull
 	Dado que soy owner de un tópico
 	Y el tópico tienen suscriptores de tipo pull
 	Cuando envío una notificación al tópico
 	Entonces los sucriptores debe poder levantar el mensaje
 
-Escenario: Envio de evento a un tópico existente sin indicar el token de seguridad
+Escenario: Envio de mensaje a un tópico existente sin indicar el token de seguridad
 	Dado que soy owner de un tópico
 	Y el tópico tienen suscriptores de tipo pull
 	Cuando envío una notificación al tópico sin pasar el token de seguridad
 	Y debo obtener el mensaje de error 'The X-Publish-Token header is invalid'
 
-Escenario: Envío de un evento a un tópico inexistente
-	Dado que voy a notificar un evento a un tópico inexistente
+Escenario: Envío de un mensaje a un tópico inexistente
+	Dado que voy a notificar un mensaje a un tópico inexistente
 	Cuando envío una notificación al tópico inexistente
 	Entonces debo obtener un status code 400
 	Y debo obtener el mensaje de error que el tópico no existe
 
-Escenario: Envío de un evento sin indicar el tópico
-	Dado que voy a notificar un evento cualquiera
+Escenario: Envío de un mensaje sin indicar el tópico
+	Dado que voy a notificar un mensaje cualquiera
 	Cuando envío una notificación sin indicar el tópico
 	Entonces debo obtener un status code 400
 	Y debo obtener el mensaje de error 'topic: The field is required.'
 
-Escenario: Envío de un evento a un tópico sin indicar el payload
-	Dado que voy notificar un evento a un tópico existente
+Escenario: Envío de un mensaje a un tópico sin indicar el payload
+	Dado que voy notificar un mensaje a un tópico existente
 	Cuando envío una notificación sin el payload
 	Entonces debo obtener un status code 400
 	Y debo obtener el mensaje de error 'payload: The field is required.'
 
-Escenario: Envío de un evento a un tópico con un payload vacío
-	Dado que voy notificar un evento a un tópico existente
+Escenario: Envío de un mensaje a un tópico con un payload vacío
+	Dado que voy notificar un mensaje a un tópico existente
 	Cuando envío una notificación con un payload vacío
 	Entonces debo obtener un status code 400
 	Y debo obtener el mensaje de error 'payload: The field is required.'	
 
-Escenario: Envío de un evento a un tópico con un payload que no es un JSON
-	Dado que voy notificar un evento a un tópico existente
+Escenario: Envío de un mensaje a un tópico con un payload que no es un JSON
+	Dado que voy notificar un mensaje a un tópico existente
 	Cuando envío una notificación con un payload que no es JSON
 	Entonces debo obtener un status code 400
 	Y debo obtener el mensaje de error 'payload: it should be a valid json object.'	
