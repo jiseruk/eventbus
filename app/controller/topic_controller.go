@@ -62,10 +62,6 @@ func (t TopicController) Get(c *gin.Context) {
 		c.JSON(apierr.Status, &apierr)
 		return
 	}
-	if topic == nil {
-		c.JSON(http.StatusNotFound, errors.NewAPIError(http.StatusNotFound, "database_error", "The topic "+topicName+" doesn't exist"))
-		return
-	}
 	topic.ResourceID = ""
 	c.JSON(http.StatusOK, &topic)
 }
@@ -82,7 +78,6 @@ func (t TopicController) Get(c *gin.Context) {
 // @Router /topics [get]
 // @OperationId list-topic
 func (t TopicController) List(c *gin.Context) {
-	//adminToken := c.GetHeader("X-Admin-Token")
 	topics, apierr := service.TopicsService.ListTopics()
 	if apierr != nil {
 		c.JSON(apierr.Status, &apierr)
@@ -90,4 +85,41 @@ func (t TopicController) List(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, &gin.H{"topics": topics})
+}
+
+// Delete godoc
+// @Summary Delete a topic
+// @Description Deletes the topic from database and resources
+// @Tags topics
+// @Accept json
+// @Produce json
+// @Param topic path string true "The name of the Topic"
+// @Success 204
+// @Failure 404 {object} errors.APIError "The topic doesn't exist"
+// @Failure 500 {object} errors.APIError
+// @Router /topics/{topic} [get]
+// @OperationId get-topic
+func (t TopicController) Delete(c *gin.Context) {
+	adminToken := c.GetHeader("X-Admin-Token")
+	topicName := c.Param("topic")
+
+	apierr := service.TopicsService.DeleteTopic(topicName, adminToken)
+	if apierr != nil {
+		c.JSON(apierr.Status, &apierr)
+		return
+	}
+
+	c.JSON(http.StatusNoContent, nil)
+}
+
+func (t TopicController) GetTopicSubscriptions(c *gin.Context) {
+
+	topicName := c.Param("topic")
+	subscriptions, apierr := service.SubscriptionsService.GetTopicSubscriptions(topicName)
+	if apierr != nil {
+		c.JSON(apierr.Status, &apierr)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"topic": topicName, "subscribers": &subscriptions})
 }

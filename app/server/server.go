@@ -28,18 +28,20 @@ func Init() {
 		log.Panic(err)
 	}*/
 	dynamo := model.GetClient()
+	subscribersDao := &model.SubscriberDaoDynamoImpl{
+		DynamoClient: dynamo,
+	}
 	//service.TopicsService = service.TopicServiceImpl{Db: db}
 	service.TopicsService = service.TopicServiceImpl{
 		Dao: &model.TopicsDaoDynamoImpl{
 			DynamoClient: dynamo,
 			UUID:         model.UUIDImpl{},
 		},
+		SubsDao: subscribersDao,
 	}
 	//service.SubscriptionsService = service.SubscriptionServiceImpl{Dao: &model.SubscriberDaoImpl{Db: *db}}
 	service.SubscriptionsService = service.SubscriptionServiceImpl{
-		Dao: &model.SubscriberDaoDynamoImpl{
-			DynamoClient: dynamo,
-		},
+		Dao: subscribersDao,
 	}
 	service.PublishersService = service.PublisherServiceImpl{}
 

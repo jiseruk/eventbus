@@ -153,7 +153,6 @@ func (azn *AWSEngine) CreateTopic(name string) (*CreateTopicOutput, error) {
 	var input = &sns.CreateTopicInput{Name: aws.String(GetAWSResourcePrefix() + name)}
 	snsoutput, err := azn.SNSClient.CreateTopic(input)
 	if err != nil {
-		fmt.Printf("Error: %#v", err)
 		return nil, err
 	}
 	output := &CreateTopicOutput{Resource: *snsoutput.TopicArn}
