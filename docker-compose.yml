@@ -14,7 +14,10 @@ services:
       - '4568:4568'  
       - '4574:4574'  
       - '4569:4569'  
+      - '4564:4564'  
+      - '9001:9001'  
     environment:
+      PORT_WEB_UI: 9001      
       SERVICES: lambda,sns,kinesis,sqs,dynamodb       
       LAMBDA_EXECUTOR: local
       DOCKER_HOST: unix:///var/run/docker.sock

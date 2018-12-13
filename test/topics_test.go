@@ -220,6 +220,16 @@ func TestGetTopic(t *testing.T) {
 		mockDynamo.AssertExpectations(t)
 	})
 
+	t.Run("It should return not found error if the topic doesn't exist", func(t *testing.T) {
+		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
+			return *input.Key["name"].S == topic.Name && *input.TableName == "Topics"
+		})).Return(&dynamodb.GetItemOutput{Item: nil}, nil).Once()
+
+		res := executeMockedRequest(router, "GET", "/topics/topic", "")
+		assert.JSONEq(t, res.Body.String(), `{"status":404,"code":"not_found_error","message":"The topic topic doesn't exist"}`)
+		assert.Equal(t, 404, res.Code)
+		mockDynamo.AssertExpectations(t)
+	})
 }
 
 func TestListTopics(t *testing.T) {
@@ -271,5 +281,163 @@ func TestListTopics(t *testing.T) {
 			res.Body.String())
 		mockDynamo.AssertExpectations(t)
 
+	})
+}
+
+func TestDeleteTopic(t *testing.T) {
+	model.Clock = clockwork.NewFakeClock()
+	mockSNS := &SNSAPIMock{}
+	mockDynamo := &DynamoDBAPIMock{}
+	router := server.GetRouter()
+	service.TopicsService = service.TopicServiceImpl{
+		Dao:     &model.TopicsDaoDynamoImpl{DynamoClient: mockDynamo, UUID: &UUIDMock{}},
+		SubsDao: &model.SubscriberDaoDynamoImpl{DynamoClient: mockDynamo},
+	}
+	client.EnginesMap["AWS"] = &client.AWSEngine{SNSClient: mockSNS}
+	topic := getTopicMock("topic", "AWS", "arn:topic", "owner", "descr")
+	subscriber := getSubscriberMock("subs", "topic", "push", "arn:subs")
+	topicItem, _ := dynamodbattribute.MarshalMap(topic)
+	subscriberItem, _ := dynamodbattribute.MarshalMap(subscriber)
+	//Para no develar el verdadero Admin Token
+	service.ADMIN_TOKEN_HASH = "d6d88aa97c88342259b82f64771658adcadcde3b18913b9c64e76129713c7605"
+
+	t.Run("It should delete the topic and subscribers when admin token is provided", func(t *testing.T) {
+		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
+			return *input.Key["name"].S == topic.Name && *input.TableName == "Topics"
+		})).Return(&dynamodb.GetItemOutput{Item: topicItem}, nil).Once()
+
+		mockSNS.On("DeleteTopic", &sns.DeleteTopicInput{TopicArn: aws.String("arn:topic")}).
+			Return(&sns.DeleteTopicOutput{}, nil).Once()
+
+		mockDynamo.On("DeleteItem", mock.MatchedBy(func(input *dynamodb.DeleteItemInput) bool {
+			return *input.Key["name"].S == topic.Name && *input.TableName == "Topics"
+		})).Return(&dynamodb.DeleteItemOutput{}, nil).Once()
+
+		mockDynamo.On("Scan", mock.MatchedBy(func(input *dynamodb.ScanInput) bool {
+			return *input.ExpressionAttributeValues[":t"].S == topic.Name &&
+				*input.TableName == "Subscribers"
+		})).Return(&dynamodb.ScanOutput{Items: []map[string]*dynamodb.AttributeValue{subscriberItem}}, nil).Once()
+
+		mockDynamo.On("BatchWriteItem", mock.MatchedBy(func(input *dynamodb.BatchWriteItemInput) bool {
+			return *input.RequestItems["Subscribers"][0].DeleteRequest.Key["name"].S == subscriber.Name
+		})).Return(&dynamodb.BatchWriteItemOutput{}, nil).Once()
+
+		res := executeMockedRequest(router, "DELETE", "/topics/topic", "", "X-Admin-Token:PutoElQueDesencripta")
+
+		assert.Equal(t, http.StatusNoContent, res.Code)
+
+		mockDynamo.AssertExpectations(t)
+		mockSNS.AssertExpectations(t)
+
+	})
+
+	t.Run("It should return Unauthorized error if no admin token is provided or is invalid", func(t *testing.T) {
+		res := executeMockedRequest(router, "DELETE", "/topics/topic", "")
+		assert.Equal(t, http.StatusUnauthorized, res.Code)
+
+		res = executeMockedRequest(router, "DELETE", "/topics/topic", "X-Admin-Token:invalid")
+		assert.Equal(t, http.StatusUnauthorized, res.Code)
+	})
+
+	t.Run("It should return Not Found if the topic doesn't exist", func(t *testing.T) {
+		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
+			return *input.Key["name"].S == topic.Name && *input.TableName == "Topics"
+		})).Return(&dynamodb.GetItemOutput{Item: nil}, nil).Once()
+
+		res := executeMockedRequest(router, "DELETE", "/topics/topic", "", "X-Admin-Token:PutoElQueDesencripta")
+		assert.Equal(t, http.StatusNotFound, res.Code)
+		mockDynamo.AssertExpectations(t)
+	})
+
+	t.Run("It should return an Error if a dynamodb.GetItem() error happends", func(t *testing.T) {
+		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
+			return *input.Key["name"].S == topic.Name && *input.TableName == "Topics"
+		})).Return(&dynamodb.GetItemOutput{Item: nil}, errors.New("Dynamodb error")).Once()
+
+		res := executeMockedRequest(router, "DELETE", "/topics/topic", "", "X-Admin-Token:PutoElQueDesencripta")
+		assert.Equal(t, http.StatusInternalServerError, res.Code)
+		mockDynamo.AssertExpectations(t)
+	})
+
+	t.Run("It should return an Error if a dynamodb.DeleteItem() error happends", func(t *testing.T) {
+		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
+			return *input.Key["name"].S == topic.Name && *input.TableName == "Topics"
+		})).Return(&dynamodb.GetItemOutput{Item: topicItem}, nil).Once()
+
+		mockSNS.On("DeleteTopic", &sns.DeleteTopicInput{TopicArn: aws.String("arn:topic")}).
+			Return(&sns.DeleteTopicOutput{}, nil).Once()
+
+		mockDynamo.On("DeleteItem", mock.MatchedBy(func(input *dynamodb.DeleteItemInput) bool {
+			return *input.Key["name"].S == topic.Name && *input.TableName == "Topics"
+		})).Return(&dynamodb.DeleteItemOutput{}, errors.New("Dynamodb delete error")).Once()
+
+		res := executeMockedRequest(router, "DELETE", "/topics/topic", "", "X-Admin-Token:PutoElQueDesencripta")
+		assert.Equal(t, http.StatusInternalServerError, res.Code)
+		mockDynamo.AssertExpectations(t)
+		mockSNS.AssertExpectations(t)
+	})
+
+	t.Run("It should return an Error if a sns.DeleteTopic() error happends", func(t *testing.T) {
+		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
+			return *input.Key["name"].S == topic.Name && *input.TableName == "Topics"
+		})).Return(&dynamodb.GetItemOutput{Item: topicItem}, nil).Once()
+
+		mockSNS.On("DeleteTopic", &sns.DeleteTopicInput{TopicArn: aws.String("arn:topic")}).
+			Return(&sns.DeleteTopicOutput{}, errors.New("Sns delete error")).Once()
+
+		res := executeMockedRequest(router, "DELETE", "/topics/topic", "", "X-Admin-Token:PutoElQueDesencripta")
+		assert.Equal(t, http.StatusInternalServerError, res.Code)
+		mockDynamo.AssertExpectations(t)
+		mockSNS.AssertExpectations(t)
+	})
+}
+
+func TestListTopicSubscriptions(t *testing.T) {
+	model.Clock = clockwork.NewFakeClock()
+	mockDynamo := &DynamoDBAPIMock{}
+	router := server.GetRouter()
+	service.TopicsService = service.TopicServiceImpl{
+		Dao:     &model.TopicsDaoDynamoImpl{DynamoClient: mockDynamo, UUID: &UUIDMock{}},
+		SubsDao: &model.SubscriberDaoDynamoImpl{DynamoClient: mockDynamo},
+	}
+	service.SubscriptionsService = service.SubscriptionServiceImpl{
+		Dao: &model.SubscriberDaoDynamoImpl{DynamoClient: mockDynamo},
+	}
+	topic := getTopicMock("topic", "AWS", "arn:topic", "owner", "descr")
+	topicItem, _ := dynamodbattribute.MarshalMap(topic)
+	subscriber := getSubscriberMock("subs_push", "topic", "push", "arn:subs")
+	subscriber2 := getSubscriberMock("subs_pull", "topic", "pull", "arn:subs")
+	//topicItem, _ := dynamodbattribute.MarshalMap(topic)
+	subscriberItem, _ := dynamodbattribute.MarshalMap(subscriber)
+	subscriberItem2, _ := dynamodbattribute.MarshalMap(subscriber2)
+
+	t.Run("it should return the topic subscribers", func(t *testing.T) {
+		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
+			return *input.Key["name"].S == topic.Name && *input.TableName == "Topics"
+		})).Return(&dynamodb.GetItemOutput{Item: topicItem}, nil).Once()
+
+		mockDynamo.On("Scan", mock.MatchedBy(func(input *dynamodb.ScanInput) bool {
+			return *input.FilterExpression == "topic = :t" && *input.TableName == "Subscribers" &&
+				*input.ExpressionAttributeValues[":t"].S == topic.Name
+		})).Return(&dynamodb.ScanOutput{
+			Items: []map[string]*dynamodb.AttributeValue{subscriberItem, subscriberItem2},
+		}, nil).Once()
+
+		res := executeMockedRequest(router, "GET", "/topics/topic/subscribers", "")
+		assert.Equal(t, http.StatusOK, res.Code)
+		assert.Equal(t, `{"subscribers":[{"name":"subs_push","resource_id":"arn:subs","topic":"topic","type":"push"},{"name":"subs_pull","resource_id":"arn:subs","topic":"topic","type":"pull"}],"topic":"topic"}`, res.Body.String())
+		mockDynamo.AssertExpectations(t)
+	})
+
+	t.Run("it should return bad request error if topic doesn't exist", func(t *testing.T) {
+		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
+			return *input.Key["name"].S == topic.Name && *input.TableName == "Topics"
+		})).Return(&dynamodb.GetItemOutput{Item: nil}, nil).Once()
+
+		res := executeMockedRequest(router, "GET", "/topics/topic/subscribers", "")
+		assert.Equal(t, http.StatusNotFound, res.Code)
+		assert.JSONEq(t, `{"status": 404, "code":"not_found_error", "message":"The topic topic doesn't exist"}`,
+			res.Body.String())
+		mockDynamo.AssertExpectations(t)
 	})
 }

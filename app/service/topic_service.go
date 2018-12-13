@@ -16,10 +16,12 @@ type TopicService interface {
 	CreateTopic(name string, owner string, description string, engine client.EngineService) (*model.Topic, *errors.APIError)
 	GetTopic(name string, adminToken ...string) (*model.Topic, *errors.APIError)
 	ListTopics() ([]model.Topic, *errors.APIError)
+	DeleteTopic(name string, adminToken ...string) *errors.APIError
 }
 
 type TopicServiceImpl struct {
-	Dao model.TopicsDao
+	Dao     model.TopicsDao
+	SubsDao model.SubscriptionsDao
 }
 
 var TopicsService TopicService
@@ -53,16 +55,12 @@ func (t TopicServiceImpl) GetTopic(name string, adminToken ...string) (*model.To
 	if err != nil {
 		return nil, errors.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
 	}
-	for i, token := range adminToken {
-		if token == "" || i > 0 {
-			topic.SecurityToken = ""
-			break
-		}
+	if topic == nil {
+		return nil, errors.NewAPIError(http.StatusNotFound, "not_found_error", "The topic "+name+" doesn't exist")
+	}
 
-		h := sha256.New()
-		h.Write([]byte(token))
-		hash := fmt.Sprintf("%x", h.Sum(nil))
-		if hash != ADMIN_TOKEN_HASH {
+	for _, token := range adminToken {
+		if !IsValidAdminToken(token) {
 			topic.SecurityToken = ""
 			break
 		}
@@ -76,4 +74,47 @@ func (t TopicServiceImpl) ListTopics() ([]model.Topic, *errors.APIError) {
 		return nil, errors.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
 	}
 	return topics, nil
+}
+
+func (t TopicServiceImpl) DeleteTopic(name string, adminToken ...string) *errors.APIError {
+	for _, token := range adminToken {
+		if !IsValidAdminToken(token) {
+			return errors.NewAPIError(http.StatusUnauthorized, "unauthorized_error", "The X-Admin-Token header should be provided")
+		}
+	}
+	topic, apierr := t.GetTopic(name)
+	if apierr != nil {
+		return apierr
+	}
+	if topic == nil {
+		return errors.NewAPIError(http.StatusNotFound, "not_found_error", "The topic "+name+" doesn't exist")
+	}
+
+	engine := client.GetEngineService(topic.Engine)
+	err := engine.DeleteTopic(topic.ResourceID)
+	if err != nil {
+		return errors.NewAPIError(http.StatusInternalServerError, "engine_error", topic.ResourceID+err.Error())
+	}
+
+	err = t.Dao.DeleteTopic(name)
+	if err != nil {
+		return errors.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
+	}
+	//The sns subscribers are automatically deleted when the sns topic is deleted.
+	err = t.SubsDao.DeleteTopicSubscriptions(name)
+	if err != nil {
+		return errors.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
+
+	}
+	return nil
+}
+
+func IsValidAdminToken(token string) bool {
+	if token == "" {
+		return false
+	}
+	h := sha256.New()
+	h.Write([]byte(token))
+	hash := fmt.Sprintf("%x", h.Sum(nil))
+	return hash == ADMIN_TOKEN_HASH
 }
