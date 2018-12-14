@@ -27,10 +27,10 @@ type PublisherController struct {
 // @Router /messages [post]
 func (t PublisherController) Publish(c *gin.Context) {
 	securityToken := c.GetHeader("X-Publish-Token")
-	if securityToken == "" {
+	/*if securityToken == "" {
 		c.JSON(http.StatusUnauthorized, errors.NewAPIError(http.StatusUnauthorized, "security_error", "The X-Publish-Token header is invalid"))
 		return
-	}
+	}*/
 	var message model.PublishMessage
 	if err := c.ShouldBindJSON(&message); err != nil {
 		if e, ok := err.(validation.Errors); ok {

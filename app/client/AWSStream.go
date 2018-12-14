@@ -105,6 +105,10 @@ func (azn AWSStreamEngine) CreatePullSubscriber(topic model.Topic, subscriber st
 	return nil, nil
 }
 
+func (azn AWSStreamEngine) DeleteSubscriber(subscriber model.Subscriber) error {
+	return nil
+}
+
 func (azn AWSStreamEngine) GetName() string {
 	return "AWSStream"
 }

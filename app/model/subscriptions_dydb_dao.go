@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
@@ -114,4 +115,24 @@ func (s *SubscriberDaoDynamoImpl) DeleteTopicSubscriptions(topic string) error {
 	}
 	_, err := s.DynamoClient.BatchWriteItem(input)
 	return err
+}
+
+func (s *SubscriberDaoDynamoImpl) DeleteSubscription(name string) error {
+	_, err := s.DynamoClient.DeleteItem(&dynamodb.DeleteItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"name": {
+				S: aws.String(name),
+			},
+		},
+		TableName: &subscribersTable,
+	})
+	if err != nil {
+		if apierr, ok := err.(awserr.Error); ok {
+			if apierr.Code() != dynamodb.ErrCodeResourceNotFoundException {
+				return err
+			}
+		}
+
+	}
+	return nil
 }
