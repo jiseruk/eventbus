@@ -33,6 +33,7 @@ func GetRouter() *gin.Engine {
 	})*/
 	router.POST("/subscribers", subscribers.Create)
 	router.GET("/subscribers/:subscriber", subscribers.Get)
+	router.DELETE("/subscribers/:subscriber", subscribers.Delete)
 	router.GET("/messages", subscribers.Consume)
 	router.DELETE("/messages", subscribers.DeleteMessages)
 	router.POST("/messages", publishers.Publish)

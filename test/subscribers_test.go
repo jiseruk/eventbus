@@ -287,7 +287,7 @@ func TestCreateSubscription(t *testing.T) {
 		})
 	}
 
-	t.Run("it should fail creating the push subscriber if an sqs.CreateQueue() error happends", func(t *testing.T) {
+	t.Run("it should fail creating the pull subscriber if an sqs.CreateQueue() error happends", func(t *testing.T) {
 		mockSQS := &SQSAPIMock{}
 		topicServiceMock := &TopicServiceMock{}
 		service.TopicsService = topicServiceMock
@@ -314,6 +314,42 @@ func TestCreateSubscription(t *testing.T) {
 		}).Return(nil, errors.New("Create Queue error")).Once()
 
 		rec := executeMockedRequest(router, "POST", "/subscribers", `{"topic": "topic", "name":"subs", "visibility_timeout":10, "type":"pull"}`)
+		assert.Equal(t, 500, rec.Code)
+		topicServiceMock.AssertExpectations(t)
+		mockDynamo.AssertExpectations(t)
+		mockSQS.AssertExpectations(t)
+
+	})
+
+	t.Run("it should fail creating the push subscriber if an sqs.CreateQueue() error happends", func(t *testing.T) {
+		mockSQS := &SQSAPIMock{}
+		topicServiceMock := &TopicServiceMock{}
+		service.TopicsService = topicServiceMock
+		client.EnginesMap["AWS"] = &client.AWSEngine{SQSClient: mockSQS}
+		//The endpoint should be an active http endpoint
+		client.HTTPClient = NewTestClient(func(req *http.Request) (*http.Response, error) {
+			// Test request parameters
+			assert.Equal(t, req.URL.String(), "http://endpoint")
+			return &http.Response{
+				StatusCode: 200,
+				Body:       ioutil.NopCloser(bytes.NewBufferString(`OK`)),
+			}, nil
+		})
+
+		subscriber := getSubscriberMock("subs", "topic", "push", "arn:subs")
+		//Topic should exist
+		topicServiceMock.On("GetTopic", "topic").
+			Return(&model.Topic{ResourceID: "arn:topic", Name: "topic", Engine: "AWS"}, nil).Once()
+		//Subscriber with the provided name shold not exist in DB
+		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
+			return *input.Key["name"].S == subscriber.Name && *input.TableName == "Subscribers"
+		})).Return(&dynamodb.GetItemOutput{Item: nil}, nil).Once()
+
+		mockSQS.On("CreateQueue", &sqs.CreateQueueInput{
+			QueueName: aws.String(client.GetAWSResourcePrefix() + "dead-letter-subs"),
+		}).Return(nil, errors.New("Create Queue error")).Once()
+
+		rec := executeMockedRequest(router, "POST", "/subscribers", `{"topic": "topic", "name":"subs", "endpoint":"http://endpoint", "type":"push"}`)
 		assert.Equal(t, 500, rec.Code)
 		topicServiceMock.AssertExpectations(t)
 		mockDynamo.AssertExpectations(t)
@@ -543,6 +579,64 @@ func TestGetSubscription(t *testing.T) {
 		assert.JSONEq(t, `{"message":"Dynamodb error","code":"database_error","status":500}`, res.Body.String())
 	})
 }
+
+func TestDeleteSubscriber(t *testing.T) {
+	model.Clock = clockwork.NewFakeClock()
+	router := server.GetRouter()
+	mockDynamo := &DynamoDBAPIMock{}
+	service.SubscriptionsService = service.SubscriptionServiceImpl{
+		Dao: &model.SubscriberDaoDynamoImpl{
+			DynamoClient: mockDynamo,
+		},
+	}
+	mockTopicService := &TopicServiceMock{}
+	service.TopicsService = mockTopicService
+
+	topicMock := getTopicMock("topic", "AWS", "arn:topic", "owner", "descr")
+
+	for _, subs := range []model.Subscriber{
+		model.Subscriber{Name: "subs", Type: "pull", ResourceID: "arn:subs", PullingQueue: "pullingQueueUrl", Topic: "topic"},
+		model.Subscriber{Name: "subs", Type: "push", ResourceID: "arn:subs", DeadLetterQueue: "dlqQueueUrl", Topic: "topic"},
+	} {
+		t.Run("It should delete the "+subs.Type+" subscriber", func(t *testing.T) {
+			mockSNS := &SNSAPIMock{}
+			mockSQS := &SQSAPIMock{}
+			mockLambda := &LambdaAPIMock{}
+			client.EnginesMap["AWS"] = &client.AWSEngine{SQSClient: mockSQS, SNSClient: mockSNS, LambdaClient: mockLambda}
+
+			subscriberItem, _ := dynamodbattribute.MarshalMap(subs)
+
+			mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
+				return *input.Key["name"].S == subs.Name && *input.TableName == "Subscribers"
+			})).Return(&dynamodb.GetItemOutput{Item: subscriberItem}, nil).Once()
+
+			mockTopicService.On("GetTopic", subs.Topic).Return(topicMock, nil).Once()
+
+			mockSNS.On("Unsubscribe", &sns.UnsubscribeInput{SubscriptionArn: &subs.ResourceID}).
+				Return(&sns.UnsubscribeOutput{}, nil).Once()
+
+			mockSQS.On("DeleteQueue", &sqs.DeleteQueueInput{QueueUrl: aws.String(subs.GetQueueURL())}).
+				Return(&sqs.DeleteQueueOutput{}, nil).Once()
+
+			if subs.Type == model.SUBSCRIBER_PUSH {
+				mockLambda.On("DeleteFunction", &lambda.DeleteFunctionInput{FunctionName: aws.String("wequeue-dev-lambda-" + subs.Name)}).
+					Return(&lambda.DeleteFunctionOutput{}, nil).Once()
+			}
+			mockDynamo.On("DeleteItem", mock.MatchedBy(func(input *dynamodb.DeleteItemInput) bool {
+				return *input.Key["name"].S == subs.Name
+			})).Return(&dynamodb.DeleteItemOutput{}, nil).Once()
+
+			res := executeMockedRequest(router, "DELETE", "/subscribers/subs", "")
+			assert.Equal(t, 204, res.Code)
+			mockTopicService.AssertExpectations(t)
+			mockDynamo.AssertExpectations(t)
+			mockSNS.AssertExpectations(t)
+			mockSQS.AssertExpectations(t)
+			mockLambda.AssertExpectations(t)
+		})
+	}
+}
+
 func TestMessage(t *testing.T) {
 
 	msg := fmt.Sprintf(`{"Message":{"payload":{"hola":"lala"},"timestamp":%d,"topic":"topic"},"MessageId":"1","Type":"Notification","TopicArn":"arn:topic"}`, clockwork.NewFakeClock().Now().UnixNano())
