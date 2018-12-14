@@ -59,11 +59,18 @@ func TestPublishMessage(t *testing.T) {
 	}
 
 	t.Run("It should fail pblishing a message without the correct security token header", func(t *testing.T) {
+		topicServiceMock := &TopicServiceMock{}
+		service.TopicsService = topicServiceMock
+		topicMock := getTopicMock("topic", "AWS", "arn:topic", "owner", "descr")
+		topicServiceMock.On("GetTopic", "topic").Return(topicMock, nil).Once()
 		rec := executeMockedRequest(router, "POST", "/messages", `{"topic": "topic", "payload":{"lala":"lala"}}`)
 		assert.Equal(t, http.StatusUnauthorized, rec.Code)
+		topicServiceMock.AssertExpectations(t)
 
+		topicServiceMock.On("GetTopic", "topic").Return(topicMock, nil).Once()
 		rec = executeMockedRequest(router, "POST", "/messages", `{"topic": "topic", "payload":{"lala":"lala"}}`, "X-Publish-Token:")
 		assert.Equal(t, http.StatusUnauthorized, rec.Code)
+		topicServiceMock.AssertExpectations(t)
 	})
 
 	t.Run("It should fail publishing a message if payload is not a json", func(t *testing.T) {

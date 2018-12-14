@@ -39,17 +39,40 @@ func (t SubscriptionController) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, &subscriber)
 }
 
+// Delete godoc
+// @Summary Delete the subscriber
+// @Description Unsubscribe the subscriber (pull or push) from the topic and eliminates the associated resources
+// @Tags subscribers
+// @Accept json
+// @Produce json
+// @Param subscriber path string true "The name of the subscriber"
+// @Success 204
+// @Failure 404 {object} errors.APIError
+// @Failure 500 {object} errors.APIError
+// @Router /subscribers/{subscriber} [delete]
+func (t SubscriptionController) Delete(c *gin.Context) {
+	subscriberName := c.Param("subscriber")
+
+	err := service.SubscriptionsService.DeleteSubscription(subscriberName)
+	if err != nil {
+		c.JSON(err.Status, err)
+		return
+	}
+
+	c.JSON(http.StatusNoContent, "")
+}
+
 // Get godoc
 // @Summary Get a subscriber
 // @Description Get the subscriber information
 // @Tags subscribers
 // @Accept json
 // @Produce json
-// @Param body body model.Subscriber true "Subscriber to a topic"
+// @Param subscriber path string true "The name of the subscriber"
 // @Success 200 {object} model.Subscriber
-// @Failure 404 {object} errors.APIError
+// @Failure 404 {object} errors.APIError "The subscriber doesn't exist"
 // @Failure 500 {object} errors.APIError
-// @Router /subscribers/:subscriber [get]
+// @Router /subscribers/{subscriber} [get]
 func (t SubscriptionController) Get(c *gin.Context) {
 	subscriberName := c.Param("subscriber")
 
@@ -59,6 +82,9 @@ func (t SubscriptionController) Get(c *gin.Context) {
 		return
 	}
 
+	subscriber.ResourceID = ""
+	subscriber.DeadLetterQueue = ""
+	subscriber.PullingQueue = ""
 	c.JSON(http.StatusOK, &subscriber)
 }
 
