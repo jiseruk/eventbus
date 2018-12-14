@@ -57,7 +57,6 @@ Cuando("envío una notificación al tópico sin pasar el token de seguridad") do
 end
 
 Cuando("envío una notificación al tópico inexistente") do
-  byebug
   @sent_event = random_event_for_topic('unknown-topic')
   send_event(@sent_event, security_header)
 end
@@ -70,7 +69,7 @@ end
 Cuando("envío una notificación sin el payload") do
   @sent_event = random_event_for_topic(@topic_name)
   @sent_event.delete('payload')
-  send_event(@sent_event)
+  send_event(@sent_event, security_header)
 end
 
 Cuando("envío una notificación con un payload vacío") do

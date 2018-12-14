@@ -115,13 +115,30 @@ module Topic
 		end
 
 		def subscribers
-			res = "bla"
-			parsed_response
-			res
+			parsed_response["subscribers"]
+		end
+
+		def subscribers_names
+			subscribers.map{|s| s["name"]}
 		end
 
 		def exists_subscriber? subscriber
-			subscribers.include? subscriber
+			subscribers_names.include? subscriber
+		end
+
+		def suscriber_info_for subscriber
+			@response = $eb_connector.subscriber_data_for subscriber
+		end
+
+		def subscriber_data_not_found
+			not_found = []
+			not_found << "No se encontró la información de nombre. Se esperaba #{@name}" unless parsed_response["name"] = @subscriber
+			if @endpoint
+				not_found << "No se encontró la información de endpoint. Se esperaba #{@endpoint}" unless parsed_response["endpoint"] = @endpoint
+			end
+			not_found << "No se encontró la información de topic. Se esperaba #{@topic}" unless parsed_response["topic"] = @topic_name
+			not_found << "No se encontró la información de type. Se esperaba #{@type}" unless parsed_response["type"] = @type
+			not_found
 		end
 
 		def subscribe_to_topic(opts)

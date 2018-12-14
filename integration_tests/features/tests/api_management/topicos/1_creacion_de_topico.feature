@@ -2,7 +2,7 @@
 @topicos @creacion
 Característica: Creación de tópicos
 	Una aplicación que desea comunicar novedades
-	Cuando quiere informar determinados eventos
+	Cuando quiere informar determinados mensajes
 	debe poder crear un tópico
 
 # method: POST

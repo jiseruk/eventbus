@@ -33,6 +33,11 @@ class EBConnector
 		get url
 	end
 
+	def subscriber_data_for subscriber
+		url = self.subscription_endpoint + "/#{subscriber}"
+		get url
+	end
+
 	# Creates a topic to /topics
 	# @param [Hash]  request body {"name" => "TopicName", "engine" => "AWS"}
 	# @return [HTTP::Response] {"name"=>"TopicName", "engine"=>"AWS", "resource_id"=>"arn:aws:sns:us-east-1:123456789012:TopicTest1541014797_1541014797", "created_at"=>"2018-10-31T19:40:23.8135555Z"}

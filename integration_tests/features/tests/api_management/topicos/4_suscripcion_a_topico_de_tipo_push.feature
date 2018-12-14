@@ -25,7 +25,7 @@ Escenario: Suscripición exitosa a un topico en modo push
 
 Escenario: Suscripción a tópico inexistente
 	Cuando me suscribo en modo push a un tópico que no existe
-	Entonces debo obtener un status code 400
+	Entonces debo obtener un status code 404
 	Y debo obtener el mensaje de tópico inexistente
 
 Escenario: Suscripción sin datos

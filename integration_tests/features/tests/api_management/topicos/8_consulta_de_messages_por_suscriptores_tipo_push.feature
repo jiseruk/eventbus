@@ -12,8 +12,8 @@ Antecedentes: Topico existente con suscriptos
 	Y estoy suscripto en modo push a dicho topico con un endpoint que solo responde a la suscripcion
 
 Escenario: Consulta de mensajes perdidos
-	Dado que estuve sin atender eventos por un tiempo debido a X motivo
-	Y que se notificó un evento a un topico que estoy suscripto
+	Dado que estuve sin atender mensajes por un tiempo debido a X motivo
+	Y que se notificó un mensaje a un topico que estoy suscripto
 	Cuando consulto los mensajes perdidos al tópico
 	Entonces debo obtener los mensajes enviados que no pude atender
 	Y los mensajes deben tener la fecha de enviado
