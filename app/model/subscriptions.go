@@ -9,6 +9,7 @@ type SubscriptionsDao interface {
 	GetSubscriptionByEndpoint(endpoint string) (*Subscriber, error)
 	GetSubscriptionsByTopic(topic string) ([]Subscriber, error)
 	DeleteTopicSubscriptions(topic string) error
+	DeleteSubscription(name string) error
 }
 
 type SubscriberDaoImpl struct {

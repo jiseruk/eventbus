@@ -308,6 +308,26 @@ func (azn AWSEngine) ReceiveMessages(resourceID string, maxMessages int64) ([]mo
 	}
 	return messages, nil
 }
+func (azn AWSEngine) DeleteSubscriber(subscriber model.Subscriber) error {
+	fmt.Printf("Subscriber to delete %+v", subscriber)
+	_, err := azn.SNSClient.Unsubscribe(&sns.UnsubscribeInput{SubscriptionArn: &subscriber.ResourceID})
+	if err != nil {
+		return err
+	}
+	_, err = azn.SQSClient.DeleteQueue(&sqs.DeleteQueueInput{QueueUrl: aws.String(subscriber.GetQueueURL())})
+	if err != nil {
+		return err
+	}
+	if subscriber.Type == model.SUBSCRIBER_PUSH {
+		_, err = azn.LambdaClient.DeleteFunction(&lambda.DeleteFunctionInput{
+			FunctionName: aws.String(GetAWSResourcePrefix() + "lambda-" + subscriber.Name),
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 func createLambdaSubscriber(client lambdaiface.LambdaAPI, topic string, subscriber string,
 	endpoint string, handler string, runtime string, lambdaZipPath string,

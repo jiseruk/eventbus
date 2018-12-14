@@ -13,7 +13,7 @@ type SubscriptionService interface {
 	CreateSubscription(name string, endpoint *string, topic string, Type string, visibilityTimeout *int) (*model.Subscriber, *errors.APIError)
 	ConsumeMessages(subscriber string, maxCount int64) (*model.Messages, *errors.APIError)
 	DeleteMessages(subscriber string, messages []model.Message) (*model.Messages, *errors.APIError)
-	//DeleteSubscription(name string) *errors.APIError
+	DeleteSubscription(name string) *errors.APIError
 	GetTopicSubscriptions(topic string) ([]model.Subscriber, *errors.APIError)
 	GetSubscription(name string) (*model.Subscriber, *errors.APIError)
 }
@@ -58,7 +58,7 @@ func (s SubscriptionServiceImpl) CreateSubscription(name string, endpoint *strin
 
 	}
 	if err != nil {
-		defer s.DeleteSubscription(name)
+		//defer s.DeleteSubscription(name)
 		return nil, errors.NewAPIError(http.StatusInternalServerError, "engine_error", err.Error())
 	}
 
@@ -115,7 +115,23 @@ func (s SubscriptionServiceImpl) DeleteMessages(subscriber string, messages []mo
 }
 
 func (s SubscriptionServiceImpl) DeleteSubscription(name string) *errors.APIError {
-
+	subscriber, apierr := s.GetSubscription(name)
+	if apierr != nil {
+		return apierr
+	}
+	topic, apierr := TopicsService.GetTopic(subscriber.Topic)
+	if apierr != nil {
+		return apierr
+	}
+	engine := client.GetEngineService(topic.Engine)
+	err := engine.DeleteSubscriber(*subscriber)
+	if err != nil {
+		return errors.NewAPIError(http.StatusInternalServerError, "engine_error", err.Error())
+	}
+	err = s.Dao.DeleteSubscription(name)
+	if err != nil {
+		return errors.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
+	}
 	return nil
 }
 func (s SubscriptionServiceImpl) GetSubscription(name string) (*model.Subscriber, *errors.APIError) {
@@ -126,9 +142,6 @@ func (s SubscriptionServiceImpl) GetSubscription(name string) (*model.Subscriber
 	if subscriber == nil {
 		return nil, errors.NewAPIError(http.StatusNotFound, "not_found_error", "The subscriber "+name+" doesn't exist")
 	}
-	subscriber.ResourceID = ""
-	subscriber.DeadLetterQueue = ""
-	subscriber.PullingQueue = ""
 	return subscriber, nil
 }
 func (s SubscriptionServiceImpl) GetTopicSubscriptions(topic string) ([]model.Subscriber, *errors.APIError) {

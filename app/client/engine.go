@@ -23,6 +23,7 @@ type EngineService interface {
 	CreatePullSubscriber(topic model.Topic, subscriber string, visibilityTimeout int) (*SubscriberOutput, error)
 	ReceiveMessages(resourceID string, maxMessages int64) ([]model.Message, error)
 	DeleteMessages(messages []model.Message, queueUrl string) ([]model.Message, error)
+	DeleteSubscriber(subscriber model.Subscriber) error
 	GetName() string
 }
 
