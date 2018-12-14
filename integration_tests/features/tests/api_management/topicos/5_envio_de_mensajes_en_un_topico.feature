@@ -35,7 +35,7 @@ Escenario: Envio de mensaje a un tópico existente sin indicar el token de segur
 Escenario: Envío de un mensaje a un tópico inexistente
 	Dado que voy a notificar un mensaje a un tópico inexistente
 	Cuando envío una notificación al tópico inexistente
-	Entonces debo obtener un status code 400
+	Entonces debo obtener un status code 404
 	Y debo obtener el mensaje de error que el tópico no existe
 
 Escenario: Envío de un mensaje sin indicar el tópico
