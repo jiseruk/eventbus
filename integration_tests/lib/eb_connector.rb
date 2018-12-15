@@ -21,6 +21,22 @@ class EBConnector
 		self.host + "/messages?"
 	end
 
+	def list_topics
+		url = self.topics_endpoint + "?"
+		# url += "&subscriber=#{subscriber}" if subscriber
+		# url += "&max_messages=#{max_messages}" if max_messages
+		get url
+	end
+
+	def list_subscribers_of_topic topic_name
+		url = self.topics_endpoint + "/#{topic_name}/subscribers"
+		get url
+	end
+
+	def subscriber_data_for subscriber
+		url = self.subscription_endpoint + "/#{subscriber}"
+		get url
+	end
 
 	# Creates a topic to /topics
 	# @param [Hash]  request body {"name" => "TopicName", "engine" => "AWS"}
@@ -40,10 +56,10 @@ class EBConnector
 
 	# Send event to a topic
 	# @param [Hash] request body {"topic": "topic_name", "payload": {"some":"thing"}}
-	def send_event body
+	def send_event body, headers={}
 		# url = self.host + "/messages"
 		url = self.messages_endpoint
-		post url, body.to_json
+		post url, body.to_json, headers
 	end
 
 	# Returns the messages for a given subscriber
@@ -70,8 +86,8 @@ class EBConnector
 		@last_response = HTTP.get url
 	end
 
-	def post url, body
-		@last_response = HTTP.post url, body: body
+	def post url, body, headers={}
+		@last_response = HTTP.post url, body: body, headers: headers
 	end
 
 	def delete url, body

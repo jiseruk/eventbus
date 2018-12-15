@@ -11,17 +11,21 @@ module Topic
 
 		def post_topic(opts)
 			name = opts.delete(:topic_name)
-			engine = opts.delete(:engine) || "AWS"
-			body = {"name" => name, "engine" => engine}
+			engine = opts.delete(:engine)
+			owner = opts.delete(:owner)
+			description = opts.delete(:description)
+			body = {"name" => name, "engine" => engine, "owner" => owner, "description" => description}
 			@response = $eb_connector.post_topic body
+			@security_token = parsed_response['security_token']
+			puts 
+		end
+
+		def security_token			
+			@security_token
 		end
 
 		def success?
 			response.status.success?
-		end
-
-		def has_topic_id?
-			!!parsed_response['resource_id']
 		end
 
 		def has_creation_date?
@@ -32,9 +36,40 @@ module Topic
 			parsed_response["name"] == name
 		end
 
+		def has_security_token?
+			!!parsed_response['security_token']
+		end
+
+		def has_engine?
+			!!parsed_response['engine']
+		end
+		
+		def has_description?
+			!!parsed_response['description']
+		end
+
+		def exist_topics? list
+			list.each do |topic_name|
+				return false unless topics_names_list.include? topic_name
+			end
+			true
+		end
+
+		def topics_names_list
+			parsed_response["topics"].map{|topic_data| topic_data["name"]}
+		end
+
+		def security_header
+			{'X-Publish-Token' => security_token}
+		end
+
+		def some_header
+			{'X-Publish-Token' => random_word}
+		end
+
 		def create_topic
 			name = random_topic_name
-			post_topic topic_name: name
+			post_topic topic_name: name, description: random_word, owner: random_word, engine: "AWS"
 			name
 		end
 
@@ -69,6 +104,41 @@ module Topic
 
 		def status_code
 			response.status.code
+		end
+
+		def list_topics
+			@response = $eb_connector.list_topics
+		end
+
+		def list_subscribers_for_topic topic_name
+			@response = $eb_connector.list_subscribers_of_topic topic_name
+		end
+
+		def subscribers
+			parsed_response["subscribers"]
+		end
+
+		def subscribers_names
+			subscribers.map{|s| s["name"]}
+		end
+
+		def exists_subscriber? subscriber
+			subscribers_names.include? subscriber
+		end
+
+		def suscriber_info_for subscriber
+			@response = $eb_connector.subscriber_data_for subscriber
+		end
+
+		def subscriber_data_not_found
+			not_found = []
+			not_found << "No se encontró la información de nombre. Se esperaba #{@name}" unless parsed_response["name"] = @subscriber
+			if @endpoint
+				not_found << "No se encontró la información de endpoint. Se esperaba #{@endpoint}" unless parsed_response["endpoint"] = @endpoint
+			end
+			not_found << "No se encontró la información de topic. Se esperaba #{@topic}" unless parsed_response["topic"] = @topic_name
+			not_found << "No se encontró la información de type. Se esperaba #{@type}" unless parsed_response["type"] = @type
+			not_found
 		end
 
 		def subscribe_to_topic(opts)
@@ -132,8 +202,8 @@ module Topic
 			@sent_event
 		end
 
-		def send_event(body)
-			@response = $eb_connector.send_event(body)
+		def send_event(body, headers=nil)
+			@response = $eb_connector.send_event(body, headers)
 			puts "Sending result: #{parsed_response}"if $debug
 		end
 
