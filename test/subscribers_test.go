@@ -74,6 +74,11 @@ func TestCreateSubscription(t *testing.T) {
 		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
 			return *input.Key["name"].S == subscriber.Name && *input.TableName == "Subscribers"
 		})).Return(&dynamodb.GetItemOutput{Item: nil}, nil).Once()
+		//Endpoint should be unique
+		mockDynamo.On("Scan", mock.MatchedBy(func(input *dynamodb.ScanInput) bool {
+			return *input.ExpressionAttributeValues[":e"].S == *subscriber.Endpoint &&
+				*input.TableName == "Subscribers"
+		})).Return(&dynamodb.ScanOutput{Items: nil}, nil).Once()
 
 		//mockDAO.On("GetSubscription", "subs").Return(nil, nil).Once()
 		//The lambda function is created in AWS
@@ -182,6 +187,39 @@ func TestCreateSubscription(t *testing.T) {
 		assert.Equal(t, 400, rec.Code)
 	})
 
+	t.Run("it should fail creating the push subscriber if the endpoint is already in use by another subscriber", func(t *testing.T) {
+		topicServiceMock := &TopicServiceMock{}
+		service.TopicsService = topicServiceMock
+
+		subscriber := &model.Subscriber{Name: "subs",
+			Topic:      "topic",
+			Type:       "push",
+			ResourceID: "arn:subs",
+			Endpoint:   aws.String("http://endpoint/"),
+			CreatedAt:  model.Clock.Now(),
+		}
+
+		subscriberItem, _ := dynamodbattribute.MarshalMap(subscriber)
+		//Topic should exist
+		topicServiceMock.On("GetTopic", "topic").
+			Return(&model.Topic{ResourceID: "arn:topic", Name: "topic", Engine: "AWS"}, nil).Once()
+		//Subscriber with the provided name shold not exist in DB
+		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
+			return *input.Key["name"].S == subscriber.Name && *input.TableName == "Subscribers"
+		})).Return(&dynamodb.GetItemOutput{Item: nil}, nil).Once()
+
+		mockDynamo.On("Scan", mock.MatchedBy(func(input *dynamodb.ScanInput) bool {
+			return *input.ExpressionAttributeValues[":e"].S == *subscriber.Endpoint &&
+				*input.TableName == "Subscribers"
+		})).Return(&dynamodb.ScanOutput{Items: []map[string]*dynamodb.AttributeValue{subscriberItem}}, nil).Once()
+
+		rec := executeMockedRequest(router, "POST", "/subscribers", `{"topic": "topic", "name":"subs", "endpoint":"http://endpoint/", "type":"push"}`)
+		assert.Equal(t, 400, rec.Code)
+		topicServiceMock.AssertExpectations(t)
+		mockDynamo.AssertExpectations(t)
+
+	})
+
 	for _, rtFn := range []RoundTripFunc{
 		func(req *http.Request) (*http.Response, error) {
 			// Test request parameters
@@ -204,10 +242,14 @@ func TestCreateSubscription(t *testing.T) {
 			topicServiceMock.On("GetTopic", "topic").
 				Return(&model.Topic{ResourceID: "arn:topic", Name: "topic", Engine: "AWS"}, nil).Once()
 			//Subscriber with the provided name shold not exist in DB
-			//mockDAO.On("GetSubscription", "subs").Return(nil, nil).Once()
 			mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
 				return *input.Key["name"].S == "subs" && *input.TableName == "Subscribers"
 			})).Return(&dynamodb.GetItemOutput{Item: nil}, nil).Once()
+
+			mockDynamo.On("Scan", mock.MatchedBy(func(input *dynamodb.ScanInput) bool {
+				return *input.ExpressionAttributeValues[":e"].S == "http://subscriber/endp" &&
+					*input.TableName == "Subscribers"
+			})).Return(&dynamodb.ScanOutput{Items: nil}, nil).Once()
 
 			rec := executeMockedRequest(router, "POST", "/subscribers", `{"topic": "topic", "name":"subs", "endpoint":"http://subscriber/endp", "type":"push"}`)
 			assert.Equal(t, 400, rec.Code)
@@ -344,6 +386,11 @@ func TestCreateSubscription(t *testing.T) {
 		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
 			return *input.Key["name"].S == subscriber.Name && *input.TableName == "Subscribers"
 		})).Return(&dynamodb.GetItemOutput{Item: nil}, nil).Once()
+
+		mockDynamo.On("Scan", mock.MatchedBy(func(input *dynamodb.ScanInput) bool {
+			return *input.ExpressionAttributeValues[":e"].S == "http://endpoint" &&
+				*input.TableName == "Subscribers"
+		})).Return(&dynamodb.ScanOutput{Items: nil}, nil).Once()
 
 		mockSQS.On("CreateQueue", &sqs.CreateQueueInput{
 			QueueName: aws.String(client.GetAWSResourcePrefix() + "dead-letter-subs"),

@@ -24,9 +24,6 @@ func init() {
 }
 
 func CheckEndpoint(url *string) (bool, error) {
-	if url == nil {
-		return true, nil
-	}
 	message := []byte(`{"payload":{"test":true}, "topic":"test_topic"}`)
 
 	resp, err := HTTPClient.Post(*url, "application/json", bytes.NewBuffer(message))

@@ -42,16 +42,22 @@ func (s SubscriptionServiceImpl) CreateSubscription(name string, endpoint *strin
 		return nil, errors.NewAPIError(http.StatusBadRequest, "database_error", fmt.Sprintf("Subscription with name %s already exists", name))
 	}
 
-	if ok, err := client.CheckEndpoint(endpoint); !ok {
-		if err != nil {
-			return nil, errors.NewAPIError(http.StatusBadRequest, "endpoint_error", fmt.Sprintf("The endpoint %s should return 2xx to a POST HTTP Call, but return error: %v", *endpoint, err.Error()))
-		}
-		return nil, errors.NewAPIError(http.StatusBadRequest, "endpoint_error", fmt.Sprintf("The endpoint %s should return 2xx to a POST HTTP Call", *endpoint))
-	}
-
 	engine := client.GetEngineService(topicObj.Engine)
 	var output *client.SubscriberOutput
 	if Type == model.SUBSCRIBER_PUSH {
+		subscriberByEndpoint, err := s.Dao.GetSubscriptionByEndpoint(*endpoint)
+		if err != nil {
+			return nil, errors.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
+		}
+		if subscriberByEndpoint != nil {
+			return nil, errors.NewAPIError(http.StatusBadRequest, "endpoint_error", fmt.Sprintf("The endpoint %s is used by the subscriber %s", *endpoint, subscriberByEndpoint.Name))
+		}
+		if ok, err := client.CheckEndpoint(endpoint); !ok {
+			if err != nil {
+				return nil, errors.NewAPIError(http.StatusBadRequest, "endpoint_error", fmt.Sprintf("The endpoint %s should return 2xx to a POST HTTP Call, but return error: %v", *endpoint, err.Error()))
+			}
+			return nil, errors.NewAPIError(http.StatusBadRequest, "endpoint_error", fmt.Sprintf("The endpoint %s should return 2xx to a POST HTTP Call", *endpoint))
+		}
 		output, err = engine.CreatePushSubscriber(*topicObj, name, *endpoint)
 	} else {
 		output, err = engine.CreatePullSubscriber(*topicObj, name, *visibilityTimeout)
