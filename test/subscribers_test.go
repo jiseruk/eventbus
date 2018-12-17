@@ -698,4 +698,21 @@ func TestMessage(t *testing.T) {
 		fmt.Printf("Error unmarshalling payload %s", payload.Message)
 	}
 	t.Logf("%#v", publishedMessage)
+
+	msg = `{"Records":[{"EventSource":"aws:sns","EventVersion":"1.0",
+	"EventSubscriptionArn":"arn:aws:sns:us-east-1:719849485599:wequeue-dev-sf_opp_stage_notif:f6b1a5b7-f2b1-451a-8840-197d93e547b1",
+	"Sns":{"Type":"Notification","MessageId":"ab9c60de-9fe5-556e-877b-344f6a7eb51f",
+	"TopicArn":"arn:aws:sns:us-east-1:719849485599:wequeue-dev-sf_opp_stage_notif",
+	"Subject":null,"Message":"{\"topic\":\"sf_opp_stage_notif\",\"payload\":{\"idAccount\":\"0014100001SLgdLAAT\",\"idMambu\":\"254886\",\"idOpportunity\":\"0064100000aGLMzAAO\",\"stageName\":\"Entregado\"},\"timestamp\":1545073499329314304}",
+	"Timestamp":"2018-12-17T19:04:59.340Z","SignatureVersion":"1",
+	"Signature":"U4KIb2LC1CjB7UCN+ivfSKmXjAMs0AGvY1pr/LGT/iWIWtDzb6IEUfwtGM70z0vJTGbHR5LjPdV3I0E7H3bX7queGJQbteaAo/Q4mrD3z3AJEjBC65ggFUTbUC5WBbijbP50pLbFT01QYTR5TxPxDL/cs0DbKxYyJ+ZDBt+aZcP4TPOsqer0zkt3oHBYrEeuaZ7e3aU6ddjpt9x/X6kOhl0BnPD389lQnkdnUjB1/zyaKVTfxx5BHuK2JGd/UK1dxXvk3bNenexWTe0u59c9EI14BZy6Y0kXQ0iKU3IORT5Nn5MOzUtfhCUhBPPDB3PIjiRdxyywLsny/rSgnz6clg==",
+	"SigningCertUrl":"https://sns.us-east-1.amazonaws.com/SimpleNotificationService-ac565b8b1a6c5d002d285f9598aa1d9b.pem",
+	"UnsubscribeUrl":"https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:719849485599:wequeue-dev-sf_opp_stage_notif:f6b1a5b7-f2b1-451a-8840-197d93e547b1",
+	"MessageAttributes":{}}}]}`
+
+	var payload2 client.DLQSNSNotification
+	err = json.Unmarshal([]byte(msg), &payload2)
+	if err != nil {
+		fmt.Printf("Error unmarshalling data %s", msg)
+	}
 }
