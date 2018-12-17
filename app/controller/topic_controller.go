@@ -115,7 +115,7 @@ func (t TopicController) Delete(c *gin.Context) {
 // GetTopicSubscriptions godoc
 // @Summary List topic subscribers
 // @Description List all the topic subscribers
-// @Tags subscriptions
+// @Tags subscribers
 // @Accept json
 // @Produce json
 // @Success 200 {array} model.Subscriber
