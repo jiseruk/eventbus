@@ -118,7 +118,7 @@ func (t TopicController) Delete(c *gin.Context) {
 // @Tags subscriptions
 // @Accept json
 // @Produce json
-// @Success 200 {object} []model.Subscriptions
+// @Success 200 {object} []model.Subscriber
 // @Failure 404 {object} errors.APIError "The topic doesn't exist"
 // @Failure 500 {object} errors.APIError
 // @Router /topics/{topic}/subscribers [get]
