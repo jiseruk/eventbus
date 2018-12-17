@@ -267,8 +267,12 @@ func (azn AWSEngine) CreatePullSubscriber(topic model.Topic, subscriber string, 
 
 }
 
-func (azn AWSEngine) ReceiveMessages(resourceID string, maxMessages int64) ([]model.Message, error) {
-	output, err := azn.SQSClient.ReceiveMessage(&sqs.ReceiveMessageInput{QueueUrl: &resourceID, MaxNumberOfMessages: &maxMessages})
+func (azn AWSEngine) ReceiveMessages(resourceID string, maxMessages int64, waitTimeSeconds int64) ([]model.Message, error) {
+	output, err := azn.SQSClient.ReceiveMessage(&sqs.ReceiveMessageInput{
+		QueueUrl:            &resourceID,
+		MaxNumberOfMessages: &maxMessages,
+		WaitTimeSeconds:     &waitTimeSeconds,
+	})
 	if err != nil {
 		return nil, err
 	}

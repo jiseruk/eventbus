@@ -31,7 +31,7 @@ func TestCreateSubscription(t *testing.T) {
 	router := server.GetRouter()
 	//For lambda creation
 	ioutil.WriteFile("/tmp/function.zip", []byte("data loca"), 0644)
-	//mockDAO := &SubscriptionsDaoMock{}
+
 	mockDynamo := &DynamoDBAPIMock{}
 	//service.SubscriptionsService = service.SubscriptionServiceImpl{Dao: mockDAO}
 	service.SubscriptionsService = service.SubscriptionServiceImpl{
@@ -402,7 +402,7 @@ func TestConsumeQueueMessages(t *testing.T) {
 				Return(&model.Topic{ResourceID: "arn:topic", Name: "topic", Engine: "AWS"}, nil).Once()
 
 			mockSQS.On("ReceiveMessage", &sqs.ReceiveMessageInput{
-				MaxNumberOfMessages: aws.Int64(10), QueueUrl: &test.queueURL}).
+				MaxNumberOfMessages: aws.Int64(10), QueueUrl: &test.queueURL, WaitTimeSeconds: aws.Int64(0)}).
 				Return(&sqs.ReceiveMessageOutput{
 					Messages: []*sqs.Message{
 						{Body: test.body,

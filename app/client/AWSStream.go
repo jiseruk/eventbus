@@ -70,7 +70,7 @@ func (azn *AWSStreamEngine) DeleteTopic(resource string) error {
 	return err
 }
 
-func (azn AWSStreamEngine) ReceiveMessages(resourceID string, maxMessages int64) ([]model.Message, error) {
+func (azn AWSStreamEngine) ReceiveMessages(resourceID string, maxMessages int64, waitTimeSeconds int64) ([]model.Message, error) {
 	azn.KinesisClient.DescribeStream(&kinesis.DescribeStreamInput{
 		StreamName: &resourceID})
 

@@ -11,7 +11,7 @@ import (
 
 type SubscriptionService interface {
 	CreateSubscription(name string, endpoint *string, topic string, Type string, visibilityTimeout *int) (*model.Subscriber, *errors.APIError)
-	ConsumeMessages(subscriber string, maxCount int64) (*model.Messages, *errors.APIError)
+	ConsumeMessages(subscriber string, maxCount int64, waitTime int64) (*model.Messages, *errors.APIError)
 	DeleteMessages(subscriber string, messages []model.Message) (*model.Messages, *errors.APIError)
 	DeleteSubscription(name string) *errors.APIError
 	GetTopicSubscriptions(topic string) ([]model.Subscriber, *errors.APIError)
@@ -74,7 +74,7 @@ func (s SubscriptionServiceImpl) CreateSubscription(name string, endpoint *strin
 
 }
 
-func (s SubscriptionServiceImpl) ConsumeMessages(subscriber string, maxCount int64) (*model.Messages, *errors.APIError) {
+func (s SubscriptionServiceImpl) ConsumeMessages(subscriber string, maxCount int64, waitTime int64) (*model.Messages, *errors.APIError) {
 	subscriberObj, err := s.Dao.GetSubscription(subscriber)
 	if err != nil {
 		return nil, errors.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
@@ -94,7 +94,7 @@ func (s SubscriptionServiceImpl) ConsumeMessages(subscriber string, maxCount int
 	engine := client.GetEngineService(topic.Engine)
 	var messages []model.Message
 
-	messages, err = engine.ReceiveMessages(subscriberObj.GetQueueURL(), maxCount)
+	messages, err = engine.ReceiveMessages(subscriberObj.GetQueueURL(), maxCount, waitTime)
 	if err != nil {
 		return nil, errors.NewAPIError(http.StatusInternalServerError, "engine_error", err.Error())
 	}
