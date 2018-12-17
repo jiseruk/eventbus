@@ -108,7 +108,8 @@ func (t SubscriptionController) Consume(c *gin.Context) {
 		return
 	}
 	fmt.Print(consumeReq)
-	messages, err := service.SubscriptionsService.ConsumeMessages(consumeReq.Subscriber, consumeReq.MaxMessages)
+	messages, err := service.SubscriptionsService.ConsumeMessages(consumeReq.Subscriber,
+		consumeReq.MaxMessages, consumeReq.WaitTimeSeconds)
 	if err != nil {
 		c.JSON(err.Status, err)
 		return

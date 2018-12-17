@@ -153,8 +153,9 @@ type deleteError struct {
 }
 
 type ConsumerRequest struct {
-	MaxMessages int64  `form:"max_messages"`
-	Subscriber  string `form:"subscriber"`
+	MaxMessages     int64  `form:"max_messages"`
+	Subscriber      string `form:"subscriber"`
+	WaitTimeSeconds int64  `form:"wait_time_seconds,default=0"`
 }
 
 func (c ConsumerRequest) Validate() error {
@@ -167,6 +168,11 @@ func (c ConsumerRequest) Validate() error {
 		"subscriber": validation.Validate(
 			&c.Subscriber,
 			validation.Required.Error(errors.ErrorFieldRequired),
+		),
+		"wait_time_seconds": validation.Validate(
+			&c.WaitTimeSeconds,
+			validation.Min(0),
+			validation.Max(20),
 		),
 	}.Filter()
 	/*return validation.ValidateStruct(

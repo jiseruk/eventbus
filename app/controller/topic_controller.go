@@ -112,6 +112,17 @@ func (t TopicController) Delete(c *gin.Context) {
 	c.JSON(http.StatusNoContent, nil)
 }
 
+// GetTopicSubscriptions godoc
+// @Summary List topic subscribers
+// @Description List all the topic subscribers
+// @Tags subscriptions
+// @Accept json
+// @Produce json
+// @Success 200 {object} model.Topic
+// @Failure 404 {object} errors.APIError "The topic doesn't exist"
+// @Failure 500 {object} errors.APIError
+// @Router /topics/{topic}/subscribers [get]
+// @OperationId list-topic-subscribers
 func (t TopicController) GetTopicSubscriptions(c *gin.Context) {
 
 	topicName := c.Param("topic")
