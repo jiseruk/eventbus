@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -39,10 +38,59 @@ func (t SubscriptionController) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, &subscriber)
 }
 
+// Delete godoc
+// @Summary Delete the subscriber
+// @Description Unsubscribe the subscriber (pull or push) from the topic and eliminates the associated resources
+// @Tags subscribers
+// @Accept json
+// @Produce json
+// @Param subscriber path string true "The name of the subscriber"
+// @Success 204
+// @Failure 404 {object} errors.APIError
+// @Failure 500 {object} errors.APIError
+// @Router /subscribers/{subscriber} [delete]
+func (t SubscriptionController) Delete(c *gin.Context) {
+	subscriberName := c.Param("subscriber")
+
+	err := service.SubscriptionsService.DeleteSubscription(subscriberName)
+	if err != nil {
+		c.JSON(err.Status, err)
+		return
+	}
+
+	c.JSON(http.StatusNoContent, "")
+}
+
+// Get godoc
+// @Summary Get a subscriber
+// @Description Get the subscriber information
+// @Tags subscribers
+// @Accept json
+// @Produce json
+// @Param subscriber path string true "The name of the subscriber"
+// @Success 200 {object} model.Subscriber
+// @Failure 404 {object} errors.APIError "The subscriber doesn't exist"
+// @Failure 500 {object} errors.APIError
+// @Router /subscribers/{subscriber} [get]
+func (t SubscriptionController) Get(c *gin.Context) {
+	subscriberName := c.Param("subscriber")
+
+	subscriber, err := service.SubscriptionsService.GetSubscription(subscriberName)
+	if err != nil {
+		c.JSON(err.Status, err)
+		return
+	}
+
+	subscriber.ResourceID = ""
+	subscriber.DeadLetterQueue = ""
+	subscriber.PullingQueue = ""
+	c.JSON(http.StatusOK, &subscriber)
+}
+
 // Consume godoc
 // @Name consume-messages
 // @Summary Consume pending messages
-// @Description consume pending messages from the subscriber's dead letter queue
+// @Description consume pending messages from the push subscriber's dead letter queue or the pull subscriber's normal queue
 // @Tags subscribers
 // @Accept json
 // @Produce json
@@ -58,8 +106,8 @@ func (t SubscriptionController) Consume(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "validation_error", err.Error()))
 		return
 	}
-	fmt.Print(consumeReq)
-	messages, err := service.SubscriptionsService.ConsumeMessages(consumeReq.Subscriber, consumeReq.MaxMessages)
+	messages, err := service.SubscriptionsService.ConsumeMessages(consumeReq.Subscriber,
+		consumeReq.MaxMessages, consumeReq.WaitTimeSeconds)
 	if err != nil {
 		c.JSON(err.Status, err)
 		return
@@ -68,8 +116,8 @@ func (t SubscriptionController) Consume(c *gin.Context) {
 }
 
 // DeleteMessages godoc
-// @Summary Delete messages from Dead Letter Queue
-// @Description delete already processed messages from the subscriber's dead letter queue
+// @Summary Delete messages from [Dead Letter Queue (Push Subscribers) / Queue (Pull Subscribers)]
+// @Description delete already processed messages from the subscriber's dead letter queue or the normal queue, depending of the type of subscriber.
 // @Tags subscribers
 // @Accept json
 // @Produce json

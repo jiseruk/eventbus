@@ -2,7 +2,7 @@
 	"hosts":{
 		"localhost":"http://localhost:8080",
 		"docker":"http://wequeue:8080",
-		"dev":"http://dev.eventbus.io",
-		"staging":"http://stg.eventbus.io",
-		"prod":"http://eventbus.io"}
+		"develop":"http://event-bus.dev.fintechpeople.io:81/",
+		"stage":"http://event-bus.stage.fintechpeople.io:81/",
+		"prod":"http://event-bus.fintechpeople.io:81/"}
 }

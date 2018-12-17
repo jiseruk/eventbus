@@ -11,9 +11,11 @@ import (
 
 type SubscriptionService interface {
 	CreateSubscription(name string, endpoint *string, topic string, Type string, visibilityTimeout *int) (*model.Subscriber, *errors.APIError)
-	ConsumeMessages(subscriber string, maxCount int64) (*model.Messages, *errors.APIError)
+	ConsumeMessages(subscriber string, maxCount int64, waitTime int64) (*model.Messages, *errors.APIError)
 	DeleteMessages(subscriber string, messages []model.Message) (*model.Messages, *errors.APIError)
 	DeleteSubscription(name string) *errors.APIError
+	GetTopicSubscriptions(topic string) ([]model.Subscriber, *errors.APIError)
+	GetSubscription(name string) (*model.Subscriber, *errors.APIError)
 }
 
 type SubscriptionServiceImpl struct {
@@ -56,7 +58,7 @@ func (s SubscriptionServiceImpl) CreateSubscription(name string, endpoint *strin
 
 	}
 	if err != nil {
-		defer s.DeleteSubscription(name)
+		//defer s.DeleteSubscription(name)
 		return nil, errors.NewAPIError(http.StatusInternalServerError, "engine_error", err.Error())
 	}
 
@@ -64,12 +66,15 @@ func (s SubscriptionServiceImpl) CreateSubscription(name string, endpoint *strin
 		output.DeadLetterQueue, output.PullingQueue, visibilityTimeout); err != nil {
 		return nil, errors.NewAPIError(http.StatusInternalServerError, "database_create_subscriber_error", err.Error())
 	} else {
+		subscription.DeadLetterQueue = ""
+		subscription.PullingQueue = ""
+		subscription.ResourceID = ""
 		return subscription, nil
 	}
 
 }
 
-func (s SubscriptionServiceImpl) ConsumeMessages(subscriber string, maxCount int64) (*model.Messages, *errors.APIError) {
+func (s SubscriptionServiceImpl) ConsumeMessages(subscriber string, maxCount int64, waitTime int64) (*model.Messages, *errors.APIError) {
 	subscriberObj, err := s.Dao.GetSubscription(subscriber)
 	if err != nil {
 		return nil, errors.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
@@ -89,7 +94,7 @@ func (s SubscriptionServiceImpl) ConsumeMessages(subscriber string, maxCount int
 	engine := client.GetEngineService(topic.Engine)
 	var messages []model.Message
 
-	messages, err = engine.ReceiveMessages(subscriberObj.GetQueueURL(), maxCount)
+	messages, err = engine.ReceiveMessages(subscriberObj.GetQueueURL(), maxCount, waitTime)
 	if err != nil {
 		return nil, errors.NewAPIError(http.StatusInternalServerError, "engine_error", err.Error())
 	}
@@ -110,5 +115,44 @@ func (s SubscriptionServiceImpl) DeleteMessages(subscriber string, messages []mo
 }
 
 func (s SubscriptionServiceImpl) DeleteSubscription(name string) *errors.APIError {
+	subscriber, apierr := s.GetSubscription(name)
+	if apierr != nil {
+		return apierr
+	}
+	topic, apierr := TopicsService.GetTopic(subscriber.Topic)
+	if apierr != nil {
+		return apierr
+	}
+	engine := client.GetEngineService(topic.Engine)
+	err := engine.DeleteSubscriber(*subscriber)
+	if err != nil {
+		return errors.NewAPIError(http.StatusInternalServerError, "engine_error", err.Error())
+	}
+	err = s.Dao.DeleteSubscription(name)
+	if err != nil {
+		return errors.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
+	}
 	return nil
+}
+func (s SubscriptionServiceImpl) GetSubscription(name string) (*model.Subscriber, *errors.APIError) {
+	subscriber, err := s.Dao.GetSubscription(name)
+	if err != nil {
+		return nil, errors.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
+	}
+	if subscriber == nil {
+		return nil, errors.NewAPIError(http.StatusNotFound, "not_found_error", "The subscriber "+name+" doesn't exist")
+	}
+	return subscriber, nil
+}
+func (s SubscriptionServiceImpl) GetTopicSubscriptions(topic string) ([]model.Subscriber, *errors.APIError) {
+	_, apierr := TopicsService.GetTopic(topic)
+	if apierr != nil {
+		return nil, apierr
+	}
+
+	subscribers, err := s.Dao.GetSubscriptionsByTopic(topic)
+	if err != nil {
+		return nil, errors.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
+	}
+	return subscribers, nil
 }

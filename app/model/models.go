@@ -8,6 +8,7 @@ import (
 	"github.com/go-ozzo/ozzo-validation/is"
 	"github.com/jinzhu/gorm"
 	"github.com/jonboulle/clockwork"
+	"github.com/satori/go.uuid"
 	"github.com/wenance/wequeue-management_api/app/errors"
 )
 
@@ -21,12 +22,15 @@ var Clock clockwork.Clock
 //Topic Model
 type Topic struct {
 	//gorm.Model
-	ID         uint      `gorm:"primary_key" json:"-"`
-	Name       string    `gorm:"not null;unique" json:"name" example:"topic_name"`
-	Engine     string    `json:"engine" example:"AWS"`
-	ResourceID string    `json:"resource_id"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"-"`
+	ID            uint      `gorm:"primary_key" json:"-"`
+	Name          string    `gorm:"not null;unique" json:"name" example:"topic_name"`
+	Engine        string    `json:"engine" example:"AWS"`
+	ResourceID    string    `json:"resource_id,omitempty"`
+	SecurityToken string    `json:"security_token,omitempty"`
+	Owner         string    `json:"owner,omitempty"`
+	Description   string    `json:"description,omitempty"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"-"`
 	//DeletedAt *time.Time `sql:"index"`
 }
 
@@ -37,15 +41,17 @@ func (t Topic) Validate() error {
 			validation.Length(1, 50)),
 		validation.Field(&t.Engine, validation.Required.Error(errors.ErrorFieldRequired),
 			validation.In("AWS", "AWSStream").Error(errors.GetInListError("AWS", "AWSStream"))),
+		validation.Field(&t.Owner, validation.Required.Error(errors.ErrorFieldRequired)),
+		validation.Field(&t.Description, validation.Required.Error(errors.ErrorFieldRequired)),
 	)
 }
 
 type Subscriber struct {
 	ID                uint      `gorm:"primary_key" json:"-"`
 	Name              string    `gorm:"not null;unique" json:"name" example:"subscriber_name"`
-	ResourceID        string    `json:"-"`
+	ResourceID        string    `json:"resource_id,omitempty"`
 	Endpoint          *string   `gorm:"unique" json:"endpoint,omitempty" example:"http://subscriber.wequeue.com/subscriber"`
-	Topic             string    `json:"topic" example:"topic_name"`
+	Topic             string    `json:"topic,omitempty" example:"topic_name"`
 	Type              string    `json:"type"`
 	DeadLetterQueue   string    `json:"dead_letter_queue,omitempty"`
 	PullingQueue      string    `json:"pulling_queue,omitempty"`
@@ -147,8 +153,9 @@ type deleteError struct {
 }
 
 type ConsumerRequest struct {
-	MaxMessages int64  `form:"max_messages"`
-	Subscriber  string `form:"subscriber"`
+	MaxMessages     int64  `form:"max_messages"`
+	Subscriber      string `form:"subscriber"`
+	WaitTimeSeconds int64  `form:"wait_time_seconds,default=0"`
 }
 
 func (c ConsumerRequest) Validate() error {
@@ -161,6 +168,11 @@ func (c ConsumerRequest) Validate() error {
 		"subscriber": validation.Validate(
 			&c.Subscriber,
 			validation.Required.Error(errors.ErrorFieldRequired),
+		),
+		"wait_time_seconds": validation.Validate(
+			&c.WaitTimeSeconds,
+			validation.Min(0),
+			validation.Max(20),
 		),
 	}.Filter()
 	/*return validation.ValidateStruct(
@@ -182,4 +194,15 @@ type DeleteDeadLetterQueueMessagesRequest struct {
 
 type DeleteDeadLetterQueueMessagesResponse struct {
 	Failed []Message `json:"failed"`
+}
+
+type UUID interface {
+	GetUUID() string
+}
+
+type UUIDImpl struct {
+}
+
+func (u UUIDImpl) GetUUID() string {
+	return uuid.NewV4().String()
 }

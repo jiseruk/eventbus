@@ -15,16 +15,22 @@ type PublisherController struct {
 
 // Publish godoc
 // @Summary Publish a message in a topic
-// @Description add by json a message in a topic
+// @Description add by json a message in a topic. The 'X-Publish-Token: $security_token' header is mandatory.
 // @Tags publishers
 // @Accept json
 // @Produce json
 // @Param body body model.PublishMessage true "The message to publish"
 // @Success 201 {object} model.PublishMessage
 // @Failure 400 {object} errors.APIError
+// @Failure 401 {object} errors.APIError "The X-Publish-Token header is invalid"
 // @Failure 500 {object} errors.APIError
 // @Router /messages [post]
 func (t PublisherController) Publish(c *gin.Context) {
+	securityToken := c.GetHeader("X-Publish-Token")
+	/*if securityToken == "" {
+		c.JSON(http.StatusUnauthorized, errors.NewAPIError(http.StatusUnauthorized, "security_error", "The X-Publish-Token header is invalid"))
+		return
+	}*/
 	var message model.PublishMessage
 	if err := c.ShouldBindJSON(&message); err != nil {
 		if e, ok := err.(validation.Errors); ok {
@@ -34,15 +40,8 @@ func (t PublisherController) Publish(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "json_error", "The request body is not a valid json"))
 		return
 	}
-	/* //Ahora en PublishMessage.validate()
-	if _, ok := message.Payload.(map[string]interface{}); !ok {
-		if _, ok := message.Payload.([]interface{}); !ok {
-			c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "json_error", "The payload should be a json"))
-			return
-		}
-	}
-	*/
-	messageOutput, err := service.PublishersService.Publish(message)
+
+	messageOutput, err := service.PublishersService.Publish(message, securityToken)
 	if err != nil {
 		c.JSON(err.Status, err)
 		return

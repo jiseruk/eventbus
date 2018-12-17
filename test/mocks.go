@@ -14,11 +14,19 @@ import (
 	"github.com/wenance/wequeue-management_api/app/model"
 )
 
-func getTopicMock(name string, engine string, resource string) *model.Topic {
-	topic := model.Topic{ResourceID: resource, Name: name, Engine: engine}
+func getTopicMock(name string, engine string, resource string, owner string, description string) *model.Topic {
+	topic := model.Topic{ResourceID: resource, Name: name, Engine: engine, Owner: owner, Description: description}
 	topic.CreatedAt = model.Clock.Now()
 	topic.UpdatedAt = model.Clock.Now()
+	topic.SecurityToken = UUIDMock{}.GetUUID()
 	return &topic
+}
+
+func getSubscriberMock(name string, topic string, Type string, resource string) *model.Subscriber{
+	subscriber := model.Subscriber{Name: name, Topic: topic, Type: Type, ResourceID: resource}
+	subscriber.CreatedAt = model.Clock.Now()
+	subscriber.UpdatedAt = model.Clock.Now()
+	return &subscriber
 }
 
 func getLambdaMock(endpoint string, subscriber string, topic string, dlqArn string) *lambda.CreateFunctionInput {
@@ -50,9 +58,13 @@ func getLambdaMock(endpoint string, subscriber string, topic string, dlqArn stri
 	return createArgs
 }
 
-func executeMockedRequest(router *gin.Engine, method string, uri string, body string) *httptest.ResponseRecorder {
+func executeMockedRequest(router *gin.Engine, method string, uri string, body string, headers ...string) *httptest.ResponseRecorder {
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest(method, uri, strings.NewReader(body))
+	for _, h := range headers {
+		header := strings.Split(h, ":")
+		req.Header[header[0]] = []string{header[1]}
+	}
 	router.ServeHTTP(rec, req)
 	return rec
 }
@@ -70,4 +82,10 @@ func NewTestClient(fn RoundTripFunc) *http.Client {
 	return &http.Client{
 		Transport: RoundTripFunc(fn),
 	}
+}
+
+type UUIDMock struct{}
+
+func (u UUIDMock) GetUUID() string {
+	return "uuid"
 }

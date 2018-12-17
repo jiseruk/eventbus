@@ -70,7 +70,7 @@ func (azn *AWSStreamEngine) DeleteTopic(resource string) error {
 	return err
 }
 
-func (azn AWSStreamEngine) ReceiveMessages(resourceID string, maxMessages int64) ([]model.Message, error) {
+func (azn AWSStreamEngine) ReceiveMessages(resourceID string, maxMessages int64, waitTimeSeconds int64) ([]model.Message, error) {
 	azn.KinesisClient.DescribeStream(&kinesis.DescribeStreamInput{
 		StreamName: &resourceID})
 
@@ -103,6 +103,10 @@ func (azn AWSStreamEngine) DeleteMessages(messages []model.Message, queueUrl str
 
 func (azn AWSStreamEngine) CreatePullSubscriber(topic model.Topic, subscriber string, visibilityTimeout int) (*SubscriberOutput, error) {
 	return nil, nil
+}
+
+func (azn AWSStreamEngine) DeleteSubscriber(subscriber model.Subscriber) error {
+	return nil
 }
 
 func (azn AWSStreamEngine) GetName() string {

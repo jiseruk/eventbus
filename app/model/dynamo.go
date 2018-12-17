@@ -81,5 +81,6 @@ func GetClient() dynamodbiface.DynamoDBAPI {
 			},
 		})
 	}
+
 	return dynamoClient
 }

@@ -5,13 +5,14 @@ import (
 )
 
 type TopicsDao interface {
-	CreateTopic(name string, engine string, resourceID string) (*Topic, error)
+	CreateTopic(name string, engine string, owner string, description string, resourceID string) (*Topic, error)
 	GetTopic(name string) (*Topic, error)
 	DeleteTopic(name string) error
+	ListTopics() ([]Topic, error)
 }
 
-func (db *DB) CreateTopic(name string, engine string, resourceID string) (*Topic, error) {
-	topic := Topic{Name: name, Engine: engine, ResourceID: resourceID }
+func (db *DB) CreateTopic(name string, engine string, owner string, description string, resourceID string) (*Topic, error) {
+	topic := Topic{Name: name, Engine: engine, ResourceID: resourceID, Owner: owner, Description: description}
 	topic.CreatedAt = Clock.Now()
 	topic.UpdatedAt = Clock.Now()
 	//topic.ID = uuid.New()
@@ -34,8 +35,12 @@ func (db *DB) GetTopic(name string) (*Topic, error) {
 }
 
 func (db *DB) DeleteTopic(name string) error {
-	if err := db.Delete(&Topic{Name: name}).Error; err != nil{
+	if err := db.Delete(&Topic{Name: name}).Error; err != nil {
 		return err
 	}
 	return nil
+}
+
+func (db *DB) ListTopics() ([]Topic, error) {
+	return nil, nil
 }

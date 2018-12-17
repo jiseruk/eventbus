@@ -45,6 +45,14 @@ class Configuration
 		'http://subscriber:9292/events'
 	end
 
+	def first_time_endpoint
+		"http://subscriber:9292/ok_only_first_time/#{timestamp}"
+	end
+
+	def timestamp
+		"#{Time.now.to_f}".gsub(".","")
+	end
+
 	def timeout
 		@application_config["timeout"]
 	end

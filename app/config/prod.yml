@@ -1,3 +1,6 @@
+bondi:
+  endpoint: bondi.fintechpeople.io:81
+
 engines:
   AWS:
     region: us-east-1

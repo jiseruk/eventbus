@@ -153,7 +153,6 @@ func (azn *AWSEngine) CreateTopic(name string) (*CreateTopicOutput, error) {
 	var input = &sns.CreateTopicInput{Name: aws.String(GetAWSResourcePrefix() + name)}
 	snsoutput, err := azn.SNSClient.CreateTopic(input)
 	if err != nil {
-		fmt.Printf("Error: %#v", err)
 		return nil, err
 	}
 	output := &CreateTopicOutput{Resource: *snsoutput.TopicArn}
@@ -208,7 +207,7 @@ func (azn AWSEngine) CreatePushSubscriber(topic model.Topic, subscriber string, 
 	})
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating subscriber")
+		return nil, errors.Wrap(err, "Error creating subscriber for topic ["+topic.ResourceID+"]")
 	}
 
 	if config.GetBool("engines.AWS.lambda.createPolicy") {
@@ -233,6 +232,7 @@ func (azn AWSEngine) CreatePullSubscriber(topic model.Topic, subscriber string, 
 		QueueName: aws.String(GetAWSResourcePrefix() + "pull-queue-" + subscriber),
 		Attributes: map[string]*string{
 			"VisibilityTimeout": aws.String(strconv.Itoa(visibilityTimeout)),
+			//"ReceiveMessageWaitTimeSeconds": aws.String("1"),
 		},
 	})
 	if err != nil {
@@ -244,14 +244,13 @@ func (azn AWSEngine) CreatePullSubscriber(topic model.Topic, subscriber string, 
 		//TODO: Borrar Queue
 		return nil, err
 	}
-
 	output, err := azn.SNSClient.Subscribe(&sns.SubscribeInput{TopicArn: &topic.ResourceID,
 		Protocol: aws.String("sqs"),
 		Endpoint: qattrs.Attributes["QueueArn"]},
 	)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating subscriber")
+		return nil, errors.Wrap(err, "Error creating subscriber for topic ["+topic.ResourceID+"]")
 	}
 
 	_, err = azn.SQSClient.SetQueueAttributes(&sqs.SetQueueAttributesInput{
@@ -268,8 +267,12 @@ func (azn AWSEngine) CreatePullSubscriber(topic model.Topic, subscriber string, 
 
 }
 
-func (azn AWSEngine) ReceiveMessages(resourceID string, maxMessages int64) ([]model.Message, error) {
-	output, err := azn.SQSClient.ReceiveMessage(&sqs.ReceiveMessageInput{QueueUrl: &resourceID, MaxNumberOfMessages: &maxMessages})
+func (azn AWSEngine) ReceiveMessages(resourceID string, maxMessages int64, waitTimeSeconds int64) ([]model.Message, error) {
+	output, err := azn.SQSClient.ReceiveMessage(&sqs.ReceiveMessageInput{
+		QueueUrl:            &resourceID,
+		MaxNumberOfMessages: &maxMessages,
+		WaitTimeSeconds:     &waitTimeSeconds,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -308,6 +311,26 @@ func (azn AWSEngine) ReceiveMessages(resourceID string, maxMessages int64) ([]mo
 		}
 	}
 	return messages, nil
+}
+func (azn AWSEngine) DeleteSubscriber(subscriber model.Subscriber) error {
+	fmt.Printf("Subscriber to delete %+v", subscriber)
+	_, err := azn.SNSClient.Unsubscribe(&sns.UnsubscribeInput{SubscriptionArn: &subscriber.ResourceID})
+	if err != nil {
+		return err
+	}
+	_, err = azn.SQSClient.DeleteQueue(&sqs.DeleteQueueInput{QueueUrl: aws.String(subscriber.GetQueueURL())})
+	if err != nil {
+		return err
+	}
+	if subscriber.Type == model.SUBSCRIBER_PUSH {
+		_, err = azn.LambdaClient.DeleteFunction(&lambda.DeleteFunctionInput{
+			FunctionName: aws.String(GetAWSResourcePrefix() + "lambda-" + subscriber.Name),
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func createLambdaSubscriber(client lambdaiface.LambdaAPI, topic string, subscriber string,

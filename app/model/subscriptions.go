@@ -7,6 +7,9 @@ type SubscriptionsDao interface {
 		endpoint *string, deadLetterQueue string, pullingQueue string, visibilityTimeout *int) (*Subscriber, error)
 	GetSubscription(name string) (*Subscriber, error)
 	GetSubscriptionByEndpoint(endpoint string) (*Subscriber, error)
+	GetSubscriptionsByTopic(topic string) ([]Subscriber, error)
+	DeleteTopicSubscriptions(topic string) error
+	DeleteSubscription(name string) error
 }
 
 type SubscriberDaoImpl struct {
@@ -52,4 +55,12 @@ func (s *SubscriberDaoImpl) getSubscriptionByField(field string, value interface
 	}
 	return &subscription, nil
 
+}
+
+func (s *SubscriberDaoImpl) GetSubscriptionsByTopic(topic string) ([]Subscriber, error) {
+	return nil, nil
+}
+
+func (s *SubscriberDaoImpl) DeleteSubscriptionsByTopic(topic string) error {
+	return nil
 }
