@@ -31,7 +31,7 @@ func TestCreateSubscription(t *testing.T) {
 	router := server.GetRouter()
 	//For lambda creation
 	ioutil.WriteFile("/tmp/function.zip", []byte("data loca"), 0644)
-	//mockDAO := &SubscriptionsDaoMock{}
+
 	mockDynamo := &DynamoDBAPIMock{}
 	//service.SubscriptionsService = service.SubscriptionServiceImpl{Dao: mockDAO}
 	service.SubscriptionsService = service.SubscriptionServiceImpl{

@@ -64,6 +64,27 @@ func (s *SubscriberDaoDynamoImpl) GetSubscription(name string) (*Subscriber, err
 }
 
 func (s *SubscriberDaoDynamoImpl) GetSubscriptionByEndpoint(endpoint string) (*Subscriber, error) {
+	input := &dynamodb.ScanInput{
+		ProjectionExpression:     aws.String("#name, #type, endpoint, visibility_timeout, created_at"),
+		ExpressionAttributeNames: map[string]*string{"#name": aws.String("name"), "#type": aws.String("type")},
+		FilterExpression:         aws.String("endpoint = :e"),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":t": {
+				S: &endpoint,
+			},
+		},
+		TableName: &subscribersTable,
+	}
+	output, err := s.DynamoClient.Scan(input)
+	var subscribers []Subscriber
+	err = dynamodbattribute.UnmarshalListOfMaps(output.Items, &subscribers)
+	if err != nil {
+		return nil, err
+	}
+	if len(subscribers) > 0 {
+		return &subscribers[0], nil
+
+	}
 	return nil, nil
 }
 

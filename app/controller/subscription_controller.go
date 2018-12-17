@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -107,7 +106,6 @@ func (t SubscriptionController) Consume(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, errors.NewAPIError(http.StatusBadRequest, "validation_error", err.Error()))
 		return
 	}
-	fmt.Print(consumeReq)
 	messages, err := service.SubscriptionsService.ConsumeMessages(consumeReq.Subscriber,
 		consumeReq.MaxMessages, consumeReq.WaitTimeSeconds)
 	if err != nil {
