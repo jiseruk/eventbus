@@ -72,7 +72,7 @@ func (t TopicController) Get(c *gin.Context) {
 // @Tags topics
 // @Accept json
 // @Produce json
-// @Success 200 {object} model.Topic
+// @Success 200 {array} model.Topic
 // @Failure 404 {object} errors.APIError "The topic doesn't exist"
 // @Failure 500 {object} errors.APIError
 // @Router /topics [get]
@@ -118,7 +118,7 @@ func (t TopicController) Delete(c *gin.Context) {
 // @Tags subscriptions
 // @Accept json
 // @Produce json
-// @Success 200 {object} []model.Subscriber
+// @Success 200 {array} model.Subscriber
 // @Failure 404 {object} errors.APIError "The topic doesn't exist"
 // @Failure 500 {object} errors.APIError
 // @Router /topics/{topic}/subscribers [get]
