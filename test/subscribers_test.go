@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/jonboulle/clockwork"
+	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/wenance/wequeue-management_api/app/client"
@@ -686,20 +687,7 @@ func TestDeleteSubscriber(t *testing.T) {
 
 func TestMessage(t *testing.T) {
 
-	msg := fmt.Sprintf(`{"Message":{"payload":{"hola":"lala"},"timestamp":%d,"topic":"topic"},"MessageId":"1","Type":"Notification","TopicArn":"arn:topic"}`, clockwork.NewFakeClock().Now().UnixNano())
-	var payload client.SNSNotification
-	err := json.Unmarshal([]byte(msg), &payload)
-	if err != nil {
-		fmt.Printf("Error unmarshalling data %s", msg)
-	}
-	var publishedMessage model.PublishMessage
-	err = json.Unmarshal([]byte(payload.Message), &publishedMessage)
-	if err != nil {
-		fmt.Printf("Error unmarshalling payload %s", payload.Message)
-	}
-	t.Logf("%#v", publishedMessage)
-
-	msg = `{"Records":[{"EventSource":"aws:sns","EventVersion":"1.0",
+	msg := `{"Records":[{"EventSource":"aws:sns","EventVersion":"1.0",
 	"EventSubscriptionArn":"arn:aws:sns:us-east-1:719849485599:wequeue-dev-sf_opp_stage_notif:f6b1a5b7-f2b1-451a-8840-197d93e547b1",
 	"Sns":{"Type":"Notification","MessageId":"ab9c60de-9fe5-556e-877b-344f6a7eb51f",
 	"TopicArn":"arn:aws:sns:us-east-1:719849485599:wequeue-dev-sf_opp_stage_notif",
@@ -709,10 +697,32 @@ func TestMessage(t *testing.T) {
 	"SigningCertUrl":"https://sns.us-east-1.amazonaws.com/SimpleNotificationService-ac565b8b1a6c5d002d285f9598aa1d9b.pem",
 	"UnsubscribeUrl":"https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:719849485599:wequeue-dev-sf_opp_stage_notif:f6b1a5b7-f2b1-451a-8840-197d93e547b1",
 	"MessageAttributes":{}}}]}`
-
-	var payload2 client.DLQSNSNotification
-	err = json.Unmarshal([]byte(msg), &payload2)
+	buff := bytes.NewBufferString(msg)
+	decoder := json.NewDecoder(buff)
+	decoder.DisallowUnknownFields()
+	var snsnotif client.SNSNotification
+	err := decoder.Decode(&snsnotif)
+	//Si es una dead-letter-queue de un push subscriber
 	if err != nil {
-		fmt.Printf("Error unmarshalling data %s", msg)
+		var dlqPayload client.DLQSNSNotification
+		err := json.Unmarshal([]byte(msg), &dlqPayload)
+		if err != nil {
+			fmt.Printf("Error unmarshalling data %s, error: %s", msg, err.Error())
+			t.Fail()
+		}
+		err = mapstructure.Decode(dlqPayload.Records[0]["Sns"], &snsnotif)
+		if err != nil {
+			fmt.Print(err.Error())
+			t.Fail()
+		}
+	} else {
+		t.Fail()
+	}
+
+	var publishedMessage model.PublishMessage
+	err = json.Unmarshal([]byte(snsnotif.Message), &publishedMessage)
+	if err != nil {
+		fmt.Printf("Error unmarshalling payload %s", snsnotif.Message)
+		t.Fail()
 	}
 }

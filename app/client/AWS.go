@@ -62,7 +62,7 @@ type DeadLetterQueueInput struct {
 }
 
 type DLQSNSNotification struct {
-	Records []map[string]map[string]interface{}
+	Records []map[string]interface{}
 }
 
 type SNSObject struct {

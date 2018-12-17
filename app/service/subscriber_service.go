@@ -44,6 +44,7 @@ func (s SubscriptionServiceImpl) CreateSubscription(name string, endpoint *strin
 
 	engine := client.GetEngineService(topicObj.Engine)
 	var output *client.SubscriberOutput
+	var engineErr error
 	if Type == model.SUBSCRIBER_PUSH {
 		subscriberByEndpoint, err := s.Dao.GetSubscriptionByEndpoint(*endpoint)
 		if err != nil {
@@ -58,14 +59,14 @@ func (s SubscriptionServiceImpl) CreateSubscription(name string, endpoint *strin
 			}
 			return nil, errors.NewAPIError(http.StatusBadRequest, "endpoint_error", fmt.Sprintf("The endpoint %s should return 2xx to a POST HTTP Call", *endpoint))
 		}
-		output, err = engine.CreatePushSubscriber(*topicObj, name, *endpoint)
+		output, engineErr = engine.CreatePushSubscriber(*topicObj, name, *endpoint)
 	} else {
-		output, err = engine.CreatePullSubscriber(*topicObj, name, *visibilityTimeout)
+		output, engineErr = engine.CreatePullSubscriber(*topicObj, name, *visibilityTimeout)
 
 	}
-	if err != nil {
+	if engineErr != nil {
 		//defer s.DeleteSubscription(name)
-		return nil, errors.NewAPIError(http.StatusInternalServerError, "engine_error", err.Error())
+		return nil, errors.NewAPIError(http.StatusInternalServerError, "engine_error", engineErr.Error())
 	}
 
 	if subscription, err := s.Dao.CreateSubscription(name, topic, Type, output.SubscriptionID, endpoint,
