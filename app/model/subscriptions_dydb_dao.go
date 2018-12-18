@@ -69,7 +69,7 @@ func (s *SubscriberDaoDynamoImpl) GetSubscriptionByEndpoint(endpoint string) (*S
 		ExpressionAttributeNames: map[string]*string{"#name": aws.String("name"), "#type": aws.String("type")},
 		FilterExpression:         aws.String("endpoint = :e"),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":t": {
+			":e": {
 				S: &endpoint,
 			},
 		},

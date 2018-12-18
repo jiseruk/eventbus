@@ -49,7 +49,7 @@ curl http://bondi.dev.fintechpeople.io:81 -XPOST -d'{"topic":"test_topic", "payl
 ```
 ## Consume failed pushed messages from the dead-letter-queue if it's a push subscriber
 ```
-curl "http://bondi.dev.fintechpeople.io:81/messages?max_messages=10&subscriber=test_subscriber"
+curl "http://bondi.dev.fintechpeople.io:81/messages?max_messages=10&subscriber=test_subscriber&wait_time_seconds=2"
 ```
 ## Consume messages from the topic if it's a pull subscriber
 ```
@@ -66,3 +66,7 @@ curl -XDELETE http://bondi.dev.fintechpeople.io:81/messages -d'{"subscriber":"te
 curl -XDELETE http://bondi.dev.fintechpeople.io:81/messages -d'{"subscriber":"test_subscriber", "messages": [{"message_id":"1", "delete_token":"x"}]}'
 ```
 
+## Get Topics List
+```
+curl "http://bondi.dev.fintechpeople.io:81/topics"
+```

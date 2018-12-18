@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/jonboulle/clockwork"
+	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/wenance/wequeue-management_api/app/client"
@@ -74,6 +75,11 @@ func TestCreateSubscription(t *testing.T) {
 		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
 			return *input.Key["name"].S == subscriber.Name && *input.TableName == "Subscribers"
 		})).Return(&dynamodb.GetItemOutput{Item: nil}, nil).Once()
+		//Endpoint should be unique
+		mockDynamo.On("Scan", mock.MatchedBy(func(input *dynamodb.ScanInput) bool {
+			return *input.ExpressionAttributeValues[":e"].S == *subscriber.Endpoint &&
+				*input.TableName == "Subscribers"
+		})).Return(&dynamodb.ScanOutput{Items: nil}, nil).Once()
 
 		//mockDAO.On("GetSubscription", "subs").Return(nil, nil).Once()
 		//The lambda function is created in AWS
@@ -182,6 +188,39 @@ func TestCreateSubscription(t *testing.T) {
 		assert.Equal(t, 400, rec.Code)
 	})
 
+	t.Run("it should fail creating the push subscriber if the endpoint is already in use by another subscriber", func(t *testing.T) {
+		topicServiceMock := &TopicServiceMock{}
+		service.TopicsService = topicServiceMock
+
+		subscriber := &model.Subscriber{Name: "subs",
+			Topic:      "topic",
+			Type:       "push",
+			ResourceID: "arn:subs",
+			Endpoint:   aws.String("http://endpoint/"),
+			CreatedAt:  model.Clock.Now(),
+		}
+
+		subscriberItem, _ := dynamodbattribute.MarshalMap(subscriber)
+		//Topic should exist
+		topicServiceMock.On("GetTopic", "topic").
+			Return(&model.Topic{ResourceID: "arn:topic", Name: "topic", Engine: "AWS"}, nil).Once()
+		//Subscriber with the provided name shold not exist in DB
+		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
+			return *input.Key["name"].S == subscriber.Name && *input.TableName == "Subscribers"
+		})).Return(&dynamodb.GetItemOutput{Item: nil}, nil).Once()
+
+		mockDynamo.On("Scan", mock.MatchedBy(func(input *dynamodb.ScanInput) bool {
+			return *input.ExpressionAttributeValues[":e"].S == *subscriber.Endpoint &&
+				*input.TableName == "Subscribers"
+		})).Return(&dynamodb.ScanOutput{Items: []map[string]*dynamodb.AttributeValue{subscriberItem}}, nil).Once()
+
+		rec := executeMockedRequest(router, "POST", "/subscribers", `{"topic": "topic", "name":"subs", "endpoint":"http://endpoint/", "type":"push"}`)
+		assert.Equal(t, 400, rec.Code)
+		topicServiceMock.AssertExpectations(t)
+		mockDynamo.AssertExpectations(t)
+
+	})
+
 	for _, rtFn := range []RoundTripFunc{
 		func(req *http.Request) (*http.Response, error) {
 			// Test request parameters
@@ -204,10 +243,14 @@ func TestCreateSubscription(t *testing.T) {
 			topicServiceMock.On("GetTopic", "topic").
 				Return(&model.Topic{ResourceID: "arn:topic", Name: "topic", Engine: "AWS"}, nil).Once()
 			//Subscriber with the provided name shold not exist in DB
-			//mockDAO.On("GetSubscription", "subs").Return(nil, nil).Once()
 			mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
 				return *input.Key["name"].S == "subs" && *input.TableName == "Subscribers"
 			})).Return(&dynamodb.GetItemOutput{Item: nil}, nil).Once()
+
+			mockDynamo.On("Scan", mock.MatchedBy(func(input *dynamodb.ScanInput) bool {
+				return *input.ExpressionAttributeValues[":e"].S == "http://subscriber/endp" &&
+					*input.TableName == "Subscribers"
+			})).Return(&dynamodb.ScanOutput{Items: nil}, nil).Once()
 
 			rec := executeMockedRequest(router, "POST", "/subscribers", `{"topic": "topic", "name":"subs", "endpoint":"http://subscriber/endp", "type":"push"}`)
 			assert.Equal(t, 400, rec.Code)
@@ -344,6 +387,11 @@ func TestCreateSubscription(t *testing.T) {
 		mockDynamo.On("GetItem", mock.MatchedBy(func(input *dynamodb.GetItemInput) bool {
 			return *input.Key["name"].S == subscriber.Name && *input.TableName == "Subscribers"
 		})).Return(&dynamodb.GetItemOutput{Item: nil}, nil).Once()
+
+		mockDynamo.On("Scan", mock.MatchedBy(func(input *dynamodb.ScanInput) bool {
+			return *input.ExpressionAttributeValues[":e"].S == "http://endpoint" &&
+				*input.TableName == "Subscribers"
+		})).Return(&dynamodb.ScanOutput{Items: nil}, nil).Once()
 
 		mockSQS.On("CreateQueue", &sqs.CreateQueueInput{
 			QueueName: aws.String(client.GetAWSResourcePrefix() + "dead-letter-subs"),
@@ -639,16 +687,42 @@ func TestDeleteSubscriber(t *testing.T) {
 
 func TestMessage(t *testing.T) {
 
-	msg := fmt.Sprintf(`{"Message":{"payload":{"hola":"lala"},"timestamp":%d,"topic":"topic"},"MessageId":"1","Type":"Notification","TopicArn":"arn:topic"}`, clockwork.NewFakeClock().Now().UnixNano())
-	var payload client.SNSNotification
-	err := json.Unmarshal([]byte(msg), &payload)
+	msg := `{"Records":[{"EventSource":"aws:sns","EventVersion":"1.0",
+	"EventSubscriptionArn":"arn:aws:sns:us-east-1:719849485599:wequeue-dev-sf_opp_stage_notif:f6b1a5b7-f2b1-451a-8840-197d93e547b1",
+	"Sns":{"Type":"Notification","MessageId":"ab9c60de-9fe5-556e-877b-344f6a7eb51f",
+	"TopicArn":"arn:aws:sns:us-east-1:719849485599:wequeue-dev-sf_opp_stage_notif",
+	"Subject":null,"Message":"{\"topic\":\"sf_opp_stage_notif\",\"payload\":{\"idAccount\":\"0014100001SLgdLAAT\",\"idMambu\":\"254886\",\"idOpportunity\":\"0064100000aGLMzAAO\",\"stageName\":\"Entregado\"},\"timestamp\":1545073499329314304}",
+	"Timestamp":"2018-12-17T19:04:59.340Z","SignatureVersion":"1",
+	"Signature":"U4KIb2LC1CjB7UCN+ivfSKmXjAMs0AGvY1pr/LGT/iWIWtDzb6IEUfwtGM70z0vJTGbHR5LjPdV3I0E7H3bX7queGJQbteaAo/Q4mrD3z3AJEjBC65ggFUTbUC5WBbijbP50pLbFT01QYTR5TxPxDL/cs0DbKxYyJ+ZDBt+aZcP4TPOsqer0zkt3oHBYrEeuaZ7e3aU6ddjpt9x/X6kOhl0BnPD389lQnkdnUjB1/zyaKVTfxx5BHuK2JGd/UK1dxXvk3bNenexWTe0u59c9EI14BZy6Y0kXQ0iKU3IORT5Nn5MOzUtfhCUhBPPDB3PIjiRdxyywLsny/rSgnz6clg==",
+	"SigningCertUrl":"https://sns.us-east-1.amazonaws.com/SimpleNotificationService-ac565b8b1a6c5d002d285f9598aa1d9b.pem",
+	"UnsubscribeUrl":"https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:719849485599:wequeue-dev-sf_opp_stage_notif:f6b1a5b7-f2b1-451a-8840-197d93e547b1",
+	"MessageAttributes":{}}}]}`
+	buff := bytes.NewBufferString(msg)
+	decoder := json.NewDecoder(buff)
+	decoder.DisallowUnknownFields()
+	var snsnotif client.SNSNotification
+	err := decoder.Decode(&snsnotif)
+	//Si es una dead-letter-queue de un push subscriber
 	if err != nil {
-		fmt.Printf("Error unmarshalling data %s", msg)
+		var dlqPayload client.DLQSNSNotification
+		err := json.Unmarshal([]byte(msg), &dlqPayload)
+		if err != nil {
+			fmt.Printf("Error unmarshalling data %s, error: %s", msg, err.Error())
+			t.Fail()
+		}
+		err = mapstructure.Decode(dlqPayload.Records[0]["Sns"], &snsnotif)
+		if err != nil {
+			fmt.Print(err.Error())
+			t.Fail()
+		}
+	} else {
+		t.Fail()
 	}
+
 	var publishedMessage model.PublishMessage
-	err = json.Unmarshal([]byte(payload.Message), &publishedMessage)
+	err = json.Unmarshal([]byte(snsnotif.Message), &publishedMessage)
 	if err != nil {
-		fmt.Printf("Error unmarshalling payload %s", payload.Message)
+		fmt.Printf("Error unmarshalling payload %s", snsnotif.Message)
+		t.Fail()
 	}
-	t.Logf("%#v", publishedMessage)
 }

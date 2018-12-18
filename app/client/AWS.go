@@ -62,7 +62,7 @@ type DeadLetterQueueInput struct {
 }
 
 type DLQSNSNotification struct {
-	Records []map[string]map[string]interface{}
+	Records []map[string]interface{}
 }
 
 type SNSObject struct {
@@ -288,7 +288,7 @@ func (azn AWSEngine) ReceiveMessages(resourceID string, maxMessages int64, waitT
 			var dlqPayload DLQSNSNotification
 			err := json.Unmarshal([]byte(*msg.Body), &dlqPayload)
 			if err != nil {
-				fmt.Printf("Error unmarshalling data %s", *msg.Body)
+				fmt.Printf("Error unmarshalling data %s, error: %s", *msg.Body, err.Error())
 				return nil, err
 			}
 			err = mapstructure.Decode(dlqPayload.Records[0]["Sns"], &snsnotif)
