@@ -381,10 +381,13 @@ func (azn AWSEngine) DeleteMessages(messages []model.Message, queueUrl string) (
 	}
 	failedDeleteMessages := make([]model.Message, 0)
 	for _, errorMsg := range output.Failed {
-		msg := model.Message{MessageID: *errorMsg.Id}
-		msg.DeleteError.Code = errorMsg.Code
-		msg.DeleteError.Message = errorMsg.Message
-		failedDeleteMessages = append(failedDeleteMessages, model.Message{MessageID: *errorMsg.Id})
+		msg := model.Message{MessageID: *errorMsg.Id,
+			DeleteError: &model.DeleteError{
+				Code:    errorMsg.Code,
+				Message: errorMsg.Message,
+			},
+		}
+		failedDeleteMessages = append(failedDeleteMessages, msg)
 	}
 	return failedDeleteMessages, nil
 }

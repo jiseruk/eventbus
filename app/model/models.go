@@ -144,10 +144,10 @@ type Message struct {
 	Message     PublishMessage `json:"message"`
 	MessageID   string         `json:"message_id"`
 	DeleteToken *string        `json:"delete_token"`
-	DeleteError *deleteError   `json:"delete_error,omitempty"`
+	DeleteError *DeleteError   `json:"delete_error,omitempty"`
 }
 
-type deleteError struct {
+type DeleteError struct {
 	Code    *string `json:"code,omitempty"`
 	Message *string `json:"message,omitempty"`
 }
