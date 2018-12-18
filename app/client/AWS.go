@@ -276,6 +276,7 @@ func (azn AWSEngine) ReceiveMessages(resourceID string, maxMessages int64, waitT
 	if err != nil {
 		return nil, err
 	}
+
 	messages := make([]model.Message, len(output.Messages))
 	for i, msg := range output.Messages {
 		buff := bytes.NewBufferString(*msg.Body)
@@ -313,7 +314,6 @@ func (azn AWSEngine) ReceiveMessages(resourceID string, maxMessages int64, waitT
 	return messages, nil
 }
 func (azn AWSEngine) DeleteSubscriber(subscriber model.Subscriber) error {
-	fmt.Printf("Subscriber to delete %+v", subscriber)
 	_, err := azn.SNSClient.Unsubscribe(&sns.UnsubscribeInput{SubscriptionArn: &subscriber.ResourceID})
 	if err != nil {
 		return err
@@ -373,7 +373,7 @@ func createLambdaSubscriber(client lambdaiface.LambdaAPI, topic string, subscrib
 func (azn AWSEngine) DeleteMessages(messages []model.Message, queueUrl string) ([]model.Message, error) {
 	messagesToDelete := make([]*sqs.DeleteMessageBatchRequestEntry, len(messages))
 	for i, message := range messages {
-		messagesToDelete[i] = &sqs.DeleteMessageBatchRequestEntry{Id: &message.MessageID, ReceiptHandle: message.DeleteToken}
+		messagesToDelete[i] = &sqs.DeleteMessageBatchRequestEntry{Id: aws.String(message.MessageID), ReceiptHandle: message.DeleteToken}
 	}
 	output, err := azn.SQSClient.DeleteMessageBatch(&sqs.DeleteMessageBatchInput{Entries: messagesToDelete, QueueUrl: &queueUrl})
 	if err != nil {
@@ -381,10 +381,13 @@ func (azn AWSEngine) DeleteMessages(messages []model.Message, queueUrl string) (
 	}
 	failedDeleteMessages := make([]model.Message, 0)
 	for _, errorMsg := range output.Failed {
-		msg := model.Message{MessageID: *errorMsg.Id}
-		msg.DeleteError.Code = errorMsg.Code
-		msg.DeleteError.Message = errorMsg.Message
-		failedDeleteMessages = append(failedDeleteMessages, model.Message{MessageID: *errorMsg.Id})
+		msg := model.Message{MessageID: *errorMsg.Id,
+			DeleteError: &model.DeleteError{
+				Code:    errorMsg.Code,
+				Message: errorMsg.Message,
+			},
+		}
+		failedDeleteMessages = append(failedDeleteMessages, msg)
 	}
 	return failedDeleteMessages, nil
 }

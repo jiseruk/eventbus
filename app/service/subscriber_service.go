@@ -114,10 +114,16 @@ func (s SubscriptionServiceImpl) DeleteMessages(subscriber string, messages []mo
 	if err != nil {
 		return nil, errors.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
 	}
-	topic, _ := TopicsService.GetTopic(subscriberObj.Topic)
-	engine := client.GetEngineService(topic.Engine)
-	result, _ := engine.DeleteMessages(messages, subscriberObj.GetQueueURL())
+	topic, apierr := TopicsService.GetTopic(subscriberObj.Topic)
+	if apierr != nil {
+		return nil, apierr
+	}
 
+	engine := client.GetEngineService(topic.Engine)
+	result, err := engine.DeleteMessages(messages, subscriberObj.GetQueueURL())
+	if err != nil {
+		return nil, errors.NewAPIError(http.StatusInternalServerError, "engine_error", err.Error())
+	}
 	return &model.Messages{Messages: result}, nil
 }
 
