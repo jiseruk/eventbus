@@ -1,8 +1,6 @@
 package server
 
 import (
-	"fmt"
-
 	"github.com/jonboulle/clockwork"
 	"github.com/swaggo/gin-swagger"
 	"github.com/swaggo/gin-swagger/swaggerFiles"
