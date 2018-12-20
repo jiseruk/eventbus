@@ -50,7 +50,7 @@ func (azn AWSStreamEngine) CreatePushSubscriber(topic model.Topic, subscriber st
 
 }
 
-func (azn AWSStreamEngine) Publish(topicResourceID string, message *model.PublishMessage) (*model.PublishMessage, error) {
+func (azn AWSStreamEngine) Publish(topicResourceID string, message *model.PublishMessage, headers map[string][]string) (*model.PublishMessage, error) {
 	bytesMessage, _ := json.Marshal(&message)
 	publishInput := &kinesis.PutRecordInput{StreamName: &message.Topic,
 		Data:         bytesMessage,
