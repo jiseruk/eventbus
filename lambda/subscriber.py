@@ -15,7 +15,7 @@ def handler(event, context):
     sns = event['Records'][0]['Sns']
     message = json.loads(sns['Message'])
     headers = sns.get('MessageAttributes', {})
-    headers = {k:v["StringValue"] for k, v in headers}
+    headers = {k:v["Value"] for k, v in headers}
     headers["Content-Type"] = "application/json"
     try:
         r = requests.post(endpoint, json=message, headers=headers)
