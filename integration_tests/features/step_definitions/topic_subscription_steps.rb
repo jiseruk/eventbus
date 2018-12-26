@@ -100,7 +100,7 @@ end
 Dado(/un suscriber suscripto en modo push al tópico cuyo endpoint debe ser único/) do
   @subscriber = random_subscriber_name
   @endpoint = random_fake_endpoint
-  create_a_subscription_of_type(push )
+  create_a_subscription_of_type('push')
 end
 
 Cuando(/intento suscribirme en modo (push|pull) con el mismo nombre de suscriber/) do |type|

@@ -15,6 +15,7 @@ Característica: Eliminación de mensajes en un tópico
 
 Antecedentes: Topico existente
 	Dado un topico determinado
+	Y el tópico tienen suscriptores de tipo pull
 @delete
 Escenario: Eliminación de un mensaje de un tópico
 	Dado se envian una serie de 10 mensajes al tópico
