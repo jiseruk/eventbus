@@ -149,7 +149,6 @@ Entonces("debo obtener los mensajes enviados que no pude atender") do
 end
 
 Entonces("los sucriptores debe poder levantar el mensaje") do
-  byebug
   ask_for_missing_events(@subscriber, "5")
   fail "No se econtró el mensaje" unless exists_events? @sent_event
 end
