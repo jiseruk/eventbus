@@ -3,20 +3,22 @@ import requests
 import os
 import json
 
-
+queueName = os.getenv('queue_name', None)
+endpoint = os.getenv('subscriber_url', None)
+environment = os.getenv('environment', None)
+ 
 def handler(event, context):
     print('Loading function')
     # Get the queue
-    queueName = os.getenv('queue_name', None)
-    endpoint = os.getenv('subscriber_url', None)
-    topic = os.getenv('topic', None)
-    environment = os.getenv('environment', None)
     print("Received event: " + json.dumps(event, indent=2))
     print("Endpoint:" + endpoint)
-    message = json.loads(event['Records'][0]['Sns']['Message'])
-    #payload = {"payload": message, "topic": topic}
+    sns = event['Records'][0]['Sns']
+    message = json.loads(sns['Message'])
+    headers = sns.get('MessageAttributes', {})
+    headers = {k:v["Value"] for (k, v) in headers.items()}
+    headers["Content-Type"] = "application/json"
     try:
-        r = requests.post(endpoint, json=message, headers={"Content-type": "application/json"})
+        r = requests.post(endpoint, json=message, headers=headers)
         print("POST message result: ", r.status_code)
         if r.status_code >= 400:
             raise Exception("Fail posting to " + endpoint + " Response: " + str(r.status_code) + "|" + r.content)

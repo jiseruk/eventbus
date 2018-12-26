@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strconv"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -168,10 +169,26 @@ func (azn AWSEngine) GetName() string {
 	return "AWS"
 }
 
-func (azn AWSEngine) Publish(topicResourceID string, message *model.PublishMessage) (*model.PublishMessage, error) {
+func (azn AWSEngine) Publish(topicResourceID string, message *model.PublishMessage, headers map[string][]string) (*model.PublishMessage, error) {
 	bytesMessage, _ := json.Marshal(&message)
 	strMessage := string(bytesMessage)
+	var messageHeaders = make(map[string]*sns.MessageAttributeValue)
+	for header, values := range headers {
+		if strings.EqualFold(header, "X-Publish-Token") {
+			continue
+		}
+		for _, value := range values {
+			//Avoid repeated headers. The last value is sent
+			messageHeaders[header] = &sns.MessageAttributeValue{
+				StringValue: aws.String(value),
+				DataType:    aws.String("String"),
+			}
+		}
+	}
 	publishInput := &sns.PublishInput{Message: &strMessage, TopicArn: &topicResourceID}
+	if len(messageHeaders) > 0 {
+		publishInput.MessageAttributes = messageHeaders
+	}
 	_, err := azn.SNSClient.Publish(publishInput)
 	if err != nil {
 		return nil, err

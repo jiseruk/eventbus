@@ -33,7 +33,7 @@ func TestPublishMessage(t *testing.T) {
 		{payload: `[{"message":"hola"}]`},
 		{payload: `{"message":{"hola":"chau"}}`},
 	} {
-		t.Run("It should publish a message in a topic", func(t *testing.T) {
+		t.Run("It should publish a message with request headers in a topic", func(t *testing.T) {
 			var topic = "topic"
 			var resource = "arn:topic"
 			topicMock := getTopicMock(topic, "AWS", resource, "owner", "descr")
@@ -45,9 +45,17 @@ func TestPublishMessage(t *testing.T) {
 					payload.payload,
 					model.Clock.Now().UnixNano()),
 				),
+				MessageAttributes: map[string]*sns.MessageAttributeValue{
+					"X-Custom-Header": &sns.MessageAttributeValue{DataType: aws.String("String"),
+						StringValue: aws.String("value"),
+					},
+					"Content-Type": &sns.MessageAttributeValue{DataType: aws.String("String"),
+						StringValue: aws.String("json"),
+					},
+				},
 			}).Return(&sns.PublishOutput{MessageId: aws.String("1")}, nil)
 
-			rec := executeMockedRequest(router, "POST", "/messages", fmt.Sprintf(`{"topic": "topic", "payload":%v}`, payload.payload), "X-Publish-Token:uuid")
+			rec := executeMockedRequest(router, "POST", "/messages", fmt.Sprintf(`{"topic": "topic", "payload":%v}`, payload.payload), "X-Publish-Token:uuid", "X-Custom-Header:value", "Content-Type:json")
 
 			assert.JSONEq(t,
 				fmt.Sprintf(`{"timestamp": %d, "payload": %s, "topic":"topic"}`, model.Clock.Now().UnixNano(), payload.payload),
@@ -58,7 +66,7 @@ func TestPublishMessage(t *testing.T) {
 		})
 	}
 
-	t.Run("It should fail pblishing a message without the correct security token header", func(t *testing.T) {
+	t.Run("It should fail publishing a message without the correct security token header", func(t *testing.T) {
 		topicServiceMock := &TopicServiceMock{}
 		service.TopicsService = topicServiceMock
 		topicMock := getTopicMock("topic", "AWS", "arn:topic", "owner", "descr")
