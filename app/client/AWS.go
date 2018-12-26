@@ -3,7 +3,6 @@ package client
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"strconv"
 	"strings"
@@ -71,15 +70,16 @@ type SNSObject struct {
 }
 
 type SNSNotification struct {
-	Message          string
-	MessageId        string
-	TopicArn         string
-	Type             string
-	SignatureVersion string
-	Signature        string
-	SigningCertURL   string
-	UnsubscribeURL   string
-	Timestamp        string
+	Message           string
+	MessageId         string
+	TopicArn          string
+	Type              string
+	SignatureVersion  string
+	Signature         string
+	SigningCertURL    string
+	UnsubscribeURL    string
+	Timestamp         string
+	MessageAttributes map[string]interface{}
 }
 
 func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI, kinesisiface.KinesisAPI, sqsiface.SQSAPI) {
@@ -306,12 +306,10 @@ func (azn AWSEngine) ReceiveMessages(resourceID string, maxMessages int64, waitT
 			var dlqPayload DLQSNSNotification
 			err := json.Unmarshal([]byte(*msg.Body), &dlqPayload)
 			if err != nil {
-				fmt.Printf("Error unmarshalling data %s, error: %s", *msg.Body, err.Error())
 				return nil, err
 			}
 			err = mapstructure.Decode(dlqPayload.Records[0]["Sns"], &snsnotif)
 			if err != nil {
-				fmt.Print(err.Error())
 				return nil, err
 			}
 		}
@@ -319,7 +317,6 @@ func (azn AWSEngine) ReceiveMessages(resourceID string, maxMessages int64, waitT
 		var publishedMessage model.PublishMessage
 		err = json.Unmarshal([]byte(snsnotif.Message), &publishedMessage)
 		if err != nil {
-			fmt.Printf("Error unmarshalling payload %s", snsnotif.Message)
 			return nil, err
 		}
 		messages[i] = model.Message{
@@ -432,7 +429,6 @@ func getPolicy(snsTopicArn string, sqsArn string, sqsName string) *string {
 	}
 	b, err := json.Marshal(&policy)
 	if err != nil {
-		fmt.Println("Error marshaling policy", err)
 		return nil
 	}
 	return aws.String(string(b))
