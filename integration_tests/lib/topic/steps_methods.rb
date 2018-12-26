@@ -157,6 +157,7 @@ module Topic
 			endpoint = @endpoint || random_fake_endpoint
 			res = subscribe_to_topic(topic_name: @topic_name, subscriber: subscriber, type: "push", endpoint: endpoint)
 			puts res if $debug
+			res
 		end
 
 		def create_a_pull_subscription timeout = 60
@@ -164,6 +165,7 @@ module Topic
 			@timeout = timeout || 30
 			res = subscribe_to_topic(topic_name: @topic_name, subscriber: subscriber, type:"pull", visibility_timeout: @timeout)
 			puts res if $debug
+			res
 		end
 
 		def create_a_subscription_of_type type, timeout=nil
