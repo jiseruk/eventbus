@@ -8,6 +8,12 @@ engines:
       executionRole: arn:aws:iam::719849485599:role/AmazonECSTask-wequeue-service-dev
       zipDir: /go/src/github.com/wenance/wequeue-management_api/lambda/
       createPolicy: true
+      subnetIds:
+        - subnet-0776e02a4f48a376d
+        - subnet-056133ad47ef8e2f6
+        - subnet-0a0cc57e1b32a6439
+      securityGroupId: sg-0c0eb33ee2f25fd7a
+
 
 databases:
   dynamodb:

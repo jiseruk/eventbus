@@ -8,6 +8,12 @@ engines:
       executionRole: 
       zipDir: /go/src/github.com/wenance/wequeue-management_api/lambda/
       createPolicy: true
+      subnetIds:
+        - subnet-03cd7b326208ac45f
+        - subnet-02fb194403d6badb0
+        - subnet-0c0ceeffce815064f
+      securityGroupId: sg-05d9481c9866aa6ae
+
 
 databases:
   dynamodb:

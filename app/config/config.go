@@ -58,6 +58,15 @@ func GetObject(key string) interface{} {
 	return Config.Get(key)
 }
 
+func GetArray(key string) []*string {
+	values := Config.GetStringSlice(key)
+	var ret []*string
+	for i := 0; i < len(values); i++ {
+		ret = append(ret, &values[i])
+	}
+	return ret
+}
+
 func GetCurrentEnvironment() *string {
 	return &currentEnv
 }

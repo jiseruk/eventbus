@@ -114,6 +114,9 @@ func (s SubscriptionServiceImpl) DeleteMessages(subscriber string, messages []mo
 	if err != nil {
 		return nil, errors.NewAPIError(http.StatusInternalServerError, "database_error", err.Error())
 	}
+	if subscriberObj == nil {
+		return nil, errors.NewAPIError(http.StatusBadRequest, "database_error", "The subscriber "+subscriber+" doesn't exist")
+	}
 	topic, apierr := TopicsService.GetTopic(subscriberObj.Topic)
 	if apierr != nil {
 		return nil, apierr
