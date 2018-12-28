@@ -375,9 +375,9 @@ func createLambdaSubscriber(client lambdaiface.LambdaAPI, topic string, subscrib
 		Tags:         map[string]*string{"project": aws.String("wequeue")},
 	}
 
-	if config.Get("engines.AWS.lambda.sucurityGroupId") != "" {
+	if config.Get("engines.AWS.lambda.securityGroupId") != "" {
 		createArgs.VpcConfig = &lambda.VpcConfig{
-			SecurityGroupIds: []*string{aws.String(config.Get("engines.AWS.lambda.sucurityGroupId"))},
+			SecurityGroupIds: []*string{aws.String(config.Get("engines.AWS.lambda.securityGroupId"))},
 			SubnetIds:        config.GetArray("engines.AWS.lambda.subnetIds"),
 		}
 	}

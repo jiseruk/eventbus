@@ -22,7 +22,7 @@ func getTopicMock(name string, engine string, resource string, owner string, des
 	return &topic
 }
 
-func getSubscriberMock(name string, topic string, Type string, resource string) *model.Subscriber{
+func getSubscriberMock(name string, topic string, Type string, resource string) *model.Subscriber {
 	subscriber := model.Subscriber{Name: name, Topic: topic, Type: Type, ResourceID: resource}
 	subscriber.CreatedAt = model.Clock.Now()
 	subscriber.UpdatedAt = model.Clock.Now()
@@ -54,6 +54,10 @@ func getLambdaMock(endpoint string, subscriber string, topic string, dlqArn stri
 		Environment:      &environment,
 		DeadLetterConfig: &lambda.DeadLetterConfig{TargetArn: &dlqArn},
 		Tags:             map[string]*string{"project": aws.String("wequeue")},
+		VpcConfig: &lambda.VpcConfig{
+			SecurityGroupIds: []*string{aws.String(config.Get("engines.AWS.lambda.securityGroupId"))},
+			SubnetIds:        config.GetArray("engines.AWS.lambda.subnetIds"),
+		},
 	}
 	return createArgs
 }

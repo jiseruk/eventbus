@@ -14,7 +14,6 @@ engines:
         - subnet-0a0cc57e1b32a6439
       securityGroupId: sg-0c0eb33ee2f25fd7a
 
-
 databases:
   dynamodb:
     tables:
