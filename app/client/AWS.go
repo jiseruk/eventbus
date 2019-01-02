@@ -3,9 +3,9 @@ package client
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"strconv"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -70,15 +70,16 @@ type SNSObject struct {
 }
 
 type SNSNotification struct {
-	Message          string
-	MessageId        string
-	TopicArn         string
-	Type             string
-	SignatureVersion string
-	Signature        string
-	SigningCertURL   string
-	UnsubscribeURL   string
-	Timestamp        string
+	Message           string
+	MessageId         string
+	TopicArn          string
+	Type              string
+	SignatureVersion  string
+	Signature         string
+	SigningCertURL    string
+	UnsubscribeURL    string
+	Timestamp         string
+	MessageAttributes map[string]interface{}
 }
 
 func GetClients() (snsiface.SNSAPI, lambdaiface.LambdaAPI, kinesisiface.KinesisAPI, sqsiface.SQSAPI) {
@@ -168,10 +169,26 @@ func (azn AWSEngine) GetName() string {
 	return "AWS"
 }
 
-func (azn AWSEngine) Publish(topicResourceID string, message *model.PublishMessage) (*model.PublishMessage, error) {
+func (azn AWSEngine) Publish(topicResourceID string, message *model.PublishMessage, headers map[string][]string) (*model.PublishMessage, error) {
 	bytesMessage, _ := json.Marshal(&message)
 	strMessage := string(bytesMessage)
+	var messageHeaders = make(map[string]*sns.MessageAttributeValue)
+	for header, values := range headers {
+		if strings.EqualFold(header, "X-Publish-Token") {
+			continue
+		}
+		for _, value := range values {
+			//Avoid repeated headers. The last value is sent
+			messageHeaders[header] = &sns.MessageAttributeValue{
+				StringValue: aws.String(value),
+				DataType:    aws.String("String"),
+			}
+		}
+	}
 	publishInput := &sns.PublishInput{Message: &strMessage, TopicArn: &topicResourceID}
+	if len(messageHeaders) > 0 {
+		publishInput.MessageAttributes = messageHeaders
+	}
 	_, err := azn.SNSClient.Publish(publishInput)
 	if err != nil {
 		return nil, err
@@ -289,12 +306,10 @@ func (azn AWSEngine) ReceiveMessages(resourceID string, maxMessages int64, waitT
 			var dlqPayload DLQSNSNotification
 			err := json.Unmarshal([]byte(*msg.Body), &dlqPayload)
 			if err != nil {
-				fmt.Printf("Error unmarshalling data %s, error: %s", *msg.Body, err.Error())
 				return nil, err
 			}
 			err = mapstructure.Decode(dlqPayload.Records[0]["Sns"], &snsnotif)
 			if err != nil {
-				fmt.Print(err.Error())
 				return nil, err
 			}
 		}
@@ -302,7 +317,6 @@ func (azn AWSEngine) ReceiveMessages(resourceID string, maxMessages int64, waitT
 		var publishedMessage model.PublishMessage
 		err = json.Unmarshal([]byte(snsnotif.Message), &publishedMessage)
 		if err != nil {
-			fmt.Printf("Error unmarshalling payload %s", snsnotif.Message)
 			return nil, err
 		}
 		messages[i] = model.Message{
@@ -360,6 +374,14 @@ func createLambdaSubscriber(client lambdaiface.LambdaAPI, topic string, subscrib
 		Environment:  &environment,
 		Tags:         map[string]*string{"project": aws.String("wequeue")},
 	}
+
+	if config.Get("engines.AWS.lambda.securityGroupId") != "" {
+		createArgs.VpcConfig = &lambda.VpcConfig{
+			SecurityGroupIds: []*string{aws.String(config.Get("engines.AWS.lambda.securityGroupId"))},
+			SubnetIds:        config.GetArray("engines.AWS.lambda.subnetIds"),
+		}
+	}
+
 	if deadLetterQueueInfo != nil {
 		createArgs.DeadLetterConfig = &lambda.DeadLetterConfig{TargetArn: deadLetterQueueInfo.QueueArn}
 		createArgs.Environment.Variables["queue_name"] = deadLetterQueueInfo.QueueName
@@ -415,7 +437,6 @@ func getPolicy(snsTopicArn string, sqsArn string, sqsName string) *string {
 	}
 	b, err := json.Marshal(&policy)
 	if err != nil {
-		fmt.Println("Error marshaling policy", err)
 		return nil
 	}
 	return aws.String(string(b))

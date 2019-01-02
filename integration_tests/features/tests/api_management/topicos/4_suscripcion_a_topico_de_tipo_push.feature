@@ -61,7 +61,7 @@ Escenario: Suscripción de suscriber con nombre existente
 @EB-34 @bugs
 Escenario: Suscripción de suscriber con endpoint existente
 	Dado un tópico existente
-	Y un suscriber ya suscripto en modo push al tópico
+	Y un suscriber suscripto en modo push al tópico cuyo endpoint debe ser único
 	Cuando intento suscribirme en modo push con el mismo enpoint que el suscriber
 	Entonces debo obtener el mensaje de error de endpoint existente	
 

@@ -18,7 +18,7 @@ type SubscriberOutput struct {
 type EngineService interface {
 	CreateTopic(name string) (*CreateTopicOutput, error)
 	DeleteTopic(resource string) error
-	Publish(topicResourceID string, message *model.PublishMessage) (*model.PublishMessage, error)
+	Publish(topicResourceID string, message *model.PublishMessage, headers map[string][]string) (*model.PublishMessage, error)
 	CreatePushSubscriber(topic model.Topic, subscriber string, endpoint string) (*SubscriberOutput, error)
 	CreatePullSubscriber(topic model.Topic, subscriber string, visibilityTimeout int) (*SubscriberOutput, error)
 	ReceiveMessages(resourceID string, maxMessages int64, waitTimeSeconds int64) ([]model.Message, error)

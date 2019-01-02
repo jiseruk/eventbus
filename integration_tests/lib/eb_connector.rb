@@ -18,7 +18,7 @@ class EBConnector
 	end
 
 	def messages_endpoint
-		self.host + "/messages?"
+		self.host + "/messages"
 	end
 
 	def list_topics

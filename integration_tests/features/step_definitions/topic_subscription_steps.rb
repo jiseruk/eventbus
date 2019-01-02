@@ -1,9 +1,9 @@
 # GIVEN
-Dado(/el tópico tienen suscriptores de tipo (push|pull)/) do |type|
+Dado(/el tópico tiene suscriptores de tipo (push|pull)/) do |type|
   @type = type
   @subscriber = random_subscriber_name
   puts "Subscriber: #{@subscriber}" if $debug
-  @endpoint = subscriber_endpoint
+  @endpoint = valid_endpoint
   create_a_subscription_of_type type
 end
 
@@ -11,7 +11,7 @@ Dado("dos suscriptores del mismo nombre en modo pull al tópico") do
   @subscriber = random_subscriber_name
   puts "Subscriber: #{@subscriber}" if $debug
   @endpoint = subscriber_endpoint
-  create_a_subscription_of_type 'pull', 5
+  create_a_subscription_of_type 'pull', 1
 end
 
 
@@ -94,6 +94,13 @@ Dado(/un suscriber ya suscripto en modo (push|pull) al tópico/) do |type|
   @type = type
   @subscriber = random_subscriber_name
   create_a_subscription_of_type(type)
+  @endpoint = parsed_response["endpoint"]
+end
+
+Dado(/un suscriber suscripto en modo push al tópico cuyo endpoint debe ser único/) do
+  @subscriber = random_subscriber_name
+  @endpoint = random_fake_endpoint
+  create_a_subscription_of_type('push')
 end
 
 Cuando(/intento suscribirme en modo (push|pull) con el mismo nombre de suscriber/) do |type|
@@ -160,10 +167,10 @@ Entonces("debo obtener el mensaje de error que el vampo endpoint no es permtido 
 end
 
 Entonces("debo obtener el mensaje de error de endpoint existente") do
-  expected_msg = "Endpoint already exists on topic"
+  expected_msg = "The endpoint #{@endpoint} is used by the subscriber"
   got = response_message
   fail "Se esperaba: #{expected_msg}.
   Se obtuvo: #{got}
-  Status code; #{response.code}" unless got == expected_msg
+  Status code; #{response.code}" unless got.start_with? expected_msg
 
 end

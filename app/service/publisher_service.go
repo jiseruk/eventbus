@@ -10,7 +10,7 @@ import (
 )
 
 type PublisherService interface {
-	Publish(message model.PublishMessage, securityToken string) (*model.PublishMessage, *errors.APIError)
+	Publish(message model.PublishMessage, securityToken string, headers map[string][]string) (*model.PublishMessage, *errors.APIError)
 }
 
 type PublisherServiceImpl struct {
@@ -18,7 +18,7 @@ type PublisherServiceImpl struct {
 
 var PublishersService PublisherService
 
-func (PublisherServiceImpl) Publish(message model.PublishMessage, securityToken string) (*model.PublishMessage, *errors.APIError) {
+func (PublisherServiceImpl) Publish(message model.PublishMessage, securityToken string, headers map[string][]string) (*model.PublishMessage, *errors.APIError) {
 	topicObj, apierr := TopicsService.GetTopic(message.Topic)
 	if apierr != nil {
 		return nil, apierr
@@ -33,7 +33,7 @@ func (PublisherServiceImpl) Publish(message model.PublishMessage, securityToken 
 	engine := client.GetEngineService(topicObj.Engine)
 	timestamp := model.Clock.Now().UnixNano()
 	message.Timestamp = &timestamp
-	_, err := engine.Publish(topicObj.ResourceID, &message)
+	_, err := engine.Publish(topicObj.ResourceID, &message, headers)
 	if err != nil {
 		return nil, errors.NewAPIError(http.StatusInternalServerError, "engine_error", err.Error())
 	}

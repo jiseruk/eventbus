@@ -3,7 +3,7 @@ require "cuba"
 require 'json'
 require "logger"
 
-$logger = Logger.new($stdout)
+# $logger = Logger.new($stdout)
 
 $events = []
 
@@ -17,32 +17,33 @@ Cuba.define do
       res.status = 404
       output = {'code'=>404, 'message'=>'Not found'}
       res.headers["Content-Type"] = "application/json; charset=utf-8"
-      $logger.info "#{output}"
+      puts "#{output}"
       res.write output.to_json
     end
 
     on "events" do
       res.headers["Content-Type"] = "application/json; charset=utf-8"
       output = $events.reverse.to_json
-      $logger.info "#{output}"
+      puts "#{output}"
       res.write output
     end
 
     on true do
       res.status = 404
       output = {'code'=>404, 'message'=>'Not found'}
-      $logger.info "#{output}"
+      puts "#{output}"
       res.headers["Content-Type"] = "application/json; charset=utf-8"
       res.write output.to_json
     end
   end
 
   on post do
-    on "events" do
+    
+    on "events/:any" do |any|
       begin
         json = req.body.read
         body = JSON.parse json
-        $logger.info "#{body}"
+        puts "#{body} to /events/#{any}"
         print "Event received: #{body}"
         $events << body
         # IO.write("#{Dir.pwd}/events.json", $events.to_json)
@@ -53,7 +54,27 @@ Cuba.define do
         res.status= 500
         res.headers["Content-Type"] = "application/json; charset=utf-8"
         output = {"code" => 500, "message" =>  "An error ocurred #{e}"}
-        $logger.info "#{output}"
+        puts "#{output}"
+        res.write output.to_json
+      end
+    end
+
+    on "events" do
+      begin
+        json = req.body.read
+        body = JSON.parse json
+        puts "#{body}"
+        print "Event received: #{body}"
+        $events << body
+        # IO.write("#{Dir.pwd}/events.json", $events.to_json)
+        res.headers["Content-Type"] = "application/json; charset=utf-8"
+        res.status = 201
+        res.write json
+      rescue => e
+        res.status= 500
+        res.headers["Content-Type"] = "application/json; charset=utf-8"
+        output = {"code" => 500, "message" =>  "An error ocurred #{e}"}
+        puts "#{output}"
         res.write output.to_json
       end
     end
@@ -62,12 +83,12 @@ Cuba.define do
       unless $answered.include? value
         code = 201
         message = "Only respond on suscription evaluation"
-        $logger.info "#{message}"
+        puts "#{message}"
         $answered << value
       else # first post recveived
         code = 500
         message = "Only the first time this endpoint respond ok"
-        $logger.info "#{message}"
+        puts "#{message}"
       end
       res.headers["Content-Type"] = "application/json; charset=utf-8"
       res.status = code
@@ -78,7 +99,7 @@ Cuba.define do
     on "returnok/:any" do |value|
       res.status = 201
       output = {'code'=>201, 'message'=>"Returning ok to /returnok/#{value}"}
-      $logger.info "#{output}"
+      puts "#{output}"
       res.headers["Content-Type"] = "application/json; charset=utf-8"
       res.write output.to_json
     end
@@ -94,7 +115,7 @@ Cuba.define do
       end
       res.status code
       output = {'code' => code, 'message' => message}
-      $logger.info "#{output}"
+      puts "#{output}"
       res.headers["Content-Type"] = "application/json; charset=utf-8"
       res.write output.to_json
     end

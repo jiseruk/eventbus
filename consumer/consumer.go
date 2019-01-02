@@ -10,6 +10,7 @@ import (
 func main() {
 	router := gin.Default()
 	router.POST("/", func(c *gin.Context) {
+		log.Printf("Request Headers %#v \n", c.Request.Header)
 		var message map[string]interface{}
 		if err := c.ShouldBindJSON(&message); err != nil {
 			c.JSON(http.StatusBadRequest, err.Error())

@@ -16,19 +16,19 @@ Característica: Envío de mensajes en un tópico
 
 Escenario: Envio de mensaje a un tópico existente para suscriptores push
 	Dado que soy owner de un tópico
-	Y el tópico tienen suscriptores de tipo push
+	Y el tópico tiene suscriptores de tipo push
 	Cuando envío una notificación al tópico
 	Entonces los sucriptores debe recibir dicho mensaje
 
 Escenario: Envio de mensaje a un tópico existente para suscriptores pull
 	Dado que soy owner de un tópico
-	Y el tópico tienen suscriptores de tipo pull
+	Y el tópico tiene suscriptores de tipo pull
 	Cuando envío una notificación al tópico
 	Entonces los sucriptores debe poder levantar el mensaje
 
 Escenario: Envio de mensaje a un tópico existente sin indicar el token de seguridad
 	Dado que soy owner de un tópico
-	Y el tópico tienen suscriptores de tipo pull
+	Y el tópico tiene suscriptores de tipo pull
 	Cuando envío una notificación al tópico sin pasar el token de seguridad
 	Y debo obtener el mensaje de error 'The X-Publish-Token header is invalid'
 
