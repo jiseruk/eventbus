@@ -1,9 +1,9 @@
 # GIVEN
-Dado(/el tópico tienen suscriptores de tipo (push|pull)/) do |type|
+Dado(/el tópico tiene suscriptores de tipo (push|pull)/) do |type|
   @type = type
   @subscriber = random_subscriber_name
   puts "Subscriber: #{@subscriber}" if $debug
-  @endpoint = subscriber_endpoint
+  @endpoint = valid_endpoint
   create_a_subscription_of_type type
 end
 
@@ -11,7 +11,7 @@ Dado("dos suscriptores del mismo nombre en modo pull al tópico") do
   @subscriber = random_subscriber_name
   puts "Subscriber: #{@subscriber}" if $debug
   @endpoint = subscriber_endpoint
-  create_a_subscription_of_type 'pull', 5
+  create_a_subscription_of_type 'pull', 1
 end
 
 

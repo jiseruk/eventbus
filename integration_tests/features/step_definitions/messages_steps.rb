@@ -37,7 +37,15 @@ Dado("se envía un mensaje al topico") do
   send_event(@sent_event, security_header)
 end
 
-
+Dado("se envian una serie de {int} mensajes al tópico") do |int|
+  @events = []
+  int.times do
+    sent_event = random_event_for_topic(@topic_name)
+    @events << sent_event
+    puts sent_event if $debug
+    send_event(sent_event, security_header)
+  end
+end
 
 
 
@@ -94,23 +102,39 @@ end
 
 Cuando("uno de los suscriptores consulta el mensaje sin hacer mas que leerlo") do
   puts "Subscriber: #{@subscriber}" if $debug
-  res = ask_for_missing_events(@subscriber, "1")
+  ask_for_missing_events(@subscriber, "10")
+  @first_messages_to_delete = messages
+  @first_messages = messages_ids
+  puts @first_messages if $debug
   puts parsed_response if $debug
 end
 
 Cuando("consulto los mensajes al tópico") do
   puts "Subscriber: #{@subscriber}" if $debug  
-  res = ask_for_missing_events(@subscriber, "5")
+  ask_for_missing_events(@subscriber, "5")
   puts parsed_response if $debug
 end
 
 Cuando("uno de los suscriptores consulta el mensaje y lo borra") do
   puts "Subscriber: #{@subscriber}" if $debug  
-  res = ask_for_missing_events(@subscriber, "5")
+  ask_for_missing_events(@subscriber, "5")
   puts parsed_response if $debug
   delete_messages
 end
 
+Cuando("uno de los suscriptores borra todos los mensajes") do
+  ask_for_missing_events(@subscriber, "10")
+  puts parsed_response if $debug
+  delete_messages
+end
+
+Cuando("el otro subscriber consulta el mensaje") do
+  ask_for_missing_events(@subscriber, "10")
+end
+
+Cuando("el primer subscritor intenta borrar el mensaje") do
+  delete_messages @subscriber, @first_messages_to_delete
+end
 
 
 
@@ -159,18 +183,33 @@ end
 
 Entonces("el otro suscriber no puede leer el mensaje") do
   puts "Subscriber: #{@subscriber}" if $debug
-  res = ask_for_missing_events(@subscriber, "5")
+  ask_for_missing_events(@subscriber, "5")
   puts parsed_response if $debug
   fail "Se obtuvo mensajes cuando no debía ya que los había tomado el primer subscriber" if exists_events? @sent_event
 end
 
 Entonces("el otro suscriptor no encontrará el mensaje") do
-
+  ask_for_missing_events(@subscriber, "5")
+  fail "Se encontró un mensaje cuando se esperaba lo contrario" if is_there_messages?
 end
 
 Entonces("el otro suscriber puede leer el mensaje") do
   puts "Subscriber: #{@subscriber}" if $debug
-  res = ask_for_missing_events(@subscriber, "5")
+  ask_for_missing_events(@subscriber, "5")
   puts parsed_response if $debug
   fail "No se encontró el mensaje esperado" unless exists_events? @sent_event
+end
+
+Entonces("el tópico no debe poseer mensajes para leer") do
+  ask_for_missing_events(@subscriber, "10")
+  puts parsed_response if $debug
+  fail "Se encontraron #{messages_size} mensajes cuando no debería" if is_there_messages?
+end
+
+Entonces("el mensaje no puede ser borrado porque el delete token lo tienen el último lector") do
+  sleep 5
+  ask_for_missing_events(@subscriber, "10")
+  actual_messages= messages_ids
+  puts actual_messages if $debug
+  fail "Se borraron los mensajes cuando no debería ya que el token utilizado había expirado" unless @first_messages == actual_messages
 end

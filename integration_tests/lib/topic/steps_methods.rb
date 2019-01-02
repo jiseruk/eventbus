@@ -55,6 +55,14 @@ module Topic
 			true
 		end
 
+		def is_there_messages?
+			parsed_response["messages"]&.any?
+		end
+
+		def messages_size
+			parsed_response["messages"].size
+		end
+
 		def topics_names_list
 			parsed_response["topics"].map{|topic_data| topic_data["name"]}
 		end
@@ -92,6 +100,10 @@ module Topic
 
 		def random_fake_endpoint
 			"http://subscriber:9292/returnok/#{random_word}#{timestamp}"
+		end
+
+		def valid_endpoint
+			"http://subscriber:9292/events/#{random_word}#{timestamp}"
 		end
 
 		def unexisting_endpoint
@@ -172,14 +184,14 @@ module Topic
 			type == 'push' ? create_a_push_subscription(timeout) : create_a_pull_subscription(timeout)
 		end
 
-		def create_subscriptions size
-			@subscribers = []
-			size.times do |i|
-				@subscribers << (@subscriber = "subscriber_#{timestamp}")
-				puts "Subscriber name: #{@subscriber}" if $debug
-				create_a_pull_subscription 5
-			end
-		end
+		# def create_subscriptions size
+		# 	@subscribers = []
+		# 	size.times do |i|
+		# 		@subscribers << (@subscriber = "subscriber_#{timestamp}")
+		# 		puts "Subscriber name: #{@subscriber}" if $debug
+		# 		create_a_pull_subscription 5
+		# 	end
+		# end
 
 		def first_time_endpoint
 			$configuration.first_time_endpoint
@@ -230,6 +242,14 @@ module Topic
 			@response
 		end
 
+		def delete_all_messages subscriber
+			ask_for_missing_events(subscriber, "10")
+			begin
+				delete_messages
+				ask_for_missing_events(subscriber, "10")
+			end until is_there_messages?
+		end
+
 		def exists_events? sent_event
 			messages.select do |msg|
 				are_messages_equals?(msg, sent_event)
@@ -249,6 +269,10 @@ module Topic
 			@response.parse['messages']
 		end
 
+		def messages_ids
+			messages&.map{|m| m["message_id"]}&.sort || []
+		end
+
 		def last_message
 			messages&.last
 		end
@@ -258,7 +282,7 @@ module Topic
 			msgs = messages_list || messages
 			# messages is like [{"message_id" => "value", "delete_token" => "value"}]
 			body = {"subscriber" => subscriber, "messages" => msgs}
-			$eb_connector.delete_messages(body)
+			@response = $eb_connector.delete_messages(body)
 		end
 
 		def timestamp
