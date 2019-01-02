@@ -374,6 +374,14 @@ func createLambdaSubscriber(client lambdaiface.LambdaAPI, topic string, subscrib
 		Environment:  &environment,
 		Tags:         map[string]*string{"project": aws.String("wequeue")},
 	}
+
+	if config.Get("engines.AWS.lambda.securityGroupId") != "" {
+		createArgs.VpcConfig = &lambda.VpcConfig{
+			SecurityGroupIds: []*string{aws.String(config.Get("engines.AWS.lambda.securityGroupId"))},
+			SubnetIds:        config.GetArray("engines.AWS.lambda.subnetIds"),
+		}
+	}
+
 	if deadLetterQueueInfo != nil {
 		createArgs.DeadLetterConfig = &lambda.DeadLetterConfig{TargetArn: deadLetterQueueInfo.QueueArn}
 		createArgs.Environment.Variables["queue_name"] = deadLetterQueueInfo.QueueName
