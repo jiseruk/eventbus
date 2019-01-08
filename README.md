@@ -27,12 +27,18 @@ http://bondi.fintechpeople.io:81
 ## Create a topic (The returning json contains a security_token which should be saved and used when publishing)
 ```
 curl -XPOST http://bondi.dev.fintechpeople.io:81/topics {"name":"topic_name", "engine":"AWS", "owner":"barrido", "description": "topic description"}
-```
 
+{"topic":"topic_name", "security_token":"$security_token", ...}
+```
+## Publish a message
+```
+curl http://bondi.dev.fintechpeople.io:81/messages -XPOST -d'{"topic":"test_topic", "payload":{"message":"Hello!!"}}' -H'content-type: application/json' -H'X-Publish-Token:$security_token'
+```
 ## Start your push subscriber app dockerized, in the same network
 ```
 docker run --network=bondi_default --network-alias=$SUBSCRIBER_NAME your:app  
 ```
+
 ## Create a push subscriber
 ```
 curl http://bondi.dev.fintechpeople.io:81/subscribers -XPOST -d'{"name":"test_subscriber", "topic":"test_topic", "endpoint":"http://$SUBSCRIBER_NAME:$PORT/test_subscriber", "type":"push"}' -H'content-type: application/json'
@@ -43,10 +49,6 @@ curl http://bondi.dev.fintechpeople.io:81/subscribers -XPOST -d'{"name":"test_su
 curl http://bondi.dev.fintechpeople.io:81/subscribers -XPOST -d'{"name":"test_subscriber", "topic":"test_topic", "visibility_timeout":30, "type":"pull"}' -H'content-type: application/json'
 ```
 
-## Publish a message
-```
-curl http://bondi.dev.fintechpeople.io:81 -XPOST -d'{"topic":"test_topic", "payload":{"message":"Hello!!"}}' -H'content-type: application/json' -H'X-Publish-Token:$security_token'
-```
 ## Consume failed pushed messages from the dead-letter-queue if it's a push subscriber
 ```
 curl "http://bondi.dev.fintechpeople.io:81/messages?max_messages=10&subscriber=test_subscriber&wait_time_seconds=2"
