@@ -26,7 +26,7 @@ http://bondi.fintechpeople.io:81
 
 ## Create a topic (The returning json contains a security_token which should be saved and used when publishing)
 ```
-curl -XPOST http://bondi.dev.fintechpeople.io:81/topics {"name":"topic_name", "engine":"AWS"}
+curl -XPOST http://bondi.dev.fintechpeople.io:81/topics {"name":"topic_name", "engine":"AWS", "owner":"barrido", "description": "topic description"}
 ```
 
 ## Start your push subscriber app dockerized, in the same network
