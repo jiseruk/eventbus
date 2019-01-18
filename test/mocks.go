@@ -53,7 +53,8 @@ func getLambdaMock(endpoint string, subscriber string, topic string, dlqArn stri
 		Runtime:          aws.String("python2.7"),
 		Environment:      &environment,
 		DeadLetterConfig: &lambda.DeadLetterConfig{TargetArn: &dlqArn},
-		Tags:             map[string]*string{"project": aws.String("wequeue")},
+		Tags: map[string]*string{"project": aws.String("wequeue"), "APP": aws.String("bondi"),
+			"ENV": config.GetCurrentEnvironment()},
 		VpcConfig: &lambda.VpcConfig{
 			SecurityGroupIds: []*string{aws.String(config.Get("engines.AWS.lambda.securityGroupId"))},
 			SubnetIds:        config.GetArray("engines.AWS.lambda.subnetIds"),

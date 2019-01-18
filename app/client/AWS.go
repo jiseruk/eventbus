@@ -372,7 +372,8 @@ func createLambdaSubscriber(client lambdaiface.LambdaAPI, topic string, subscrib
 		Role:         aws.String(config.Get("engines.AWS.lambda.executionRole")),
 		Runtime:      &runtime,
 		Environment:  &environment,
-		Tags:         map[string]*string{"project": aws.String("wequeue")},
+		Tags: map[string]*string{"project": aws.String("wequeue"), "APP": aws.String("bondi"),
+			"ENV": config.GetCurrentEnvironment()},
 	}
 
 	if config.Get("engines.AWS.lambda.securityGroupId") != "" {
