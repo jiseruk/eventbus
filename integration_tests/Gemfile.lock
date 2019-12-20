@@ -48,7 +48,7 @@ GEM
     multi_json (1.13.1)
     multi_test (0.1.2)
     public_suffix (3.0.3)
-    rack (2.0.5)
+    rack (2.0.8)
     require_all (2.0.0)
     syntax (1.2.2)
     unf (0.1.4)
